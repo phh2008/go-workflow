@@ -1,8 +1,9 @@
 module github.com/Bunny3th/easy-workflow
 
-go 1.19
+go 1.26.0
 
 require (
+	github.com/expr-lang/expr v1.17.8
 	github.com/gin-gonic/gin v1.9.1
 	github.com/swaggo/files v1.0.1
 	github.com/swaggo/gin-swagger v1.6.0
@@ -29,6 +30,7 @@ require (
 	github.com/go-sql-driver/mysql v1.7.0 // indirect
 	github.com/goccy/go-json v0.10.2 // indirect
 	github.com/google/go-cmp v0.5.9 // indirect
+	github.com/google/uuid v1.6.0 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
