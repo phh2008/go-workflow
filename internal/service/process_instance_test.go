@@ -84,13 +84,19 @@ func TestGetInstanceStartByUser(t *testing.T) {
 		}
 		return expected, nil
 	}
+	repo.CountInstanceStartByUserFunc = func(ctx context.Context, userID, processName string) (int64, error) {
+		return 2, nil
+	}
 
-	result, err := eng.GetInstanceStartByUser(ctx, "user1", "", 0, 10)
+	result, err := eng.GetInstanceStartByUser(ctx, "user1", "", 1, 10)
 	if err != nil {
 		t.Fatalf("GetInstanceStartByUser 返回错误: %v", err)
 	}
-	if len(result) != 2 {
-		t.Fatalf("返回数量 = %d, 期望 2", len(result))
+	if len(result.Data) != 2 {
+		t.Fatalf("返回数量 = %d, 期望 2", len(result.Data))
+	}
+	if result.Count != 2 {
+		t.Errorf("Count = %d, 期望 2", result.Count)
 	}
 }
 
@@ -105,13 +111,16 @@ func TestGetInstanceStartByUser_WithProcessName(t *testing.T) {
 		}
 		return []model.InstanceView{{ProcInstID: 1}}, nil
 	}
+	repo.CountInstanceStartByUserFunc = func(ctx context.Context, userID, processName string) (int64, error) {
+		return 1, nil
+	}
 
-	result, err := eng.GetInstanceStartByUser(ctx, "user1", "请假流程", 0, 10)
+	result, err := eng.GetInstanceStartByUser(ctx, "user1", "请假流程", 1, 10)
 	if err != nil {
 		t.Fatalf("GetInstanceStartByUser 返回错误: %v", err)
 	}
-	if len(result) != 1 {
-		t.Fatalf("返回数量 = %d, 期望 1", len(result))
+	if len(result.Data) != 1 {
+		t.Fatalf("返回数量 = %d, 期望 1", len(result.Data))
 	}
 }
 

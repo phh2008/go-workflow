@@ -105,10 +105,10 @@ func (h *ProcInstHandler) StartByUser(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, err.Error())
 		return
 	}
-	insts, err := h.engine.GetInstanceStartByUser(c.Request.Context(), req.UserID, req.ProcessName, req.Offset(), req.GetPageSize())
+	result, err := h.engine.GetInstanceStartByUser(c.Request.Context(), req.UserID, req.ProcessName, req.GetPageNo(), req.GetPageSize())
 	if err != nil {
 		c.JSON(http.StatusBadRequest, err.Error())
 		return
 	}
-	c.JSON(http.StatusOK, insts)
+	c.JSON(http.StatusOK, result)
 }

@@ -124,14 +124,32 @@ func (e *Engine) GetTaskInfo(ctx context.Context, taskID int) (model.TaskView, e
 	return e.repo.GetTaskInfo(ctx, taskID)
 }
 
-// GetTaskToDoList 获取特定用户待办任务列表。
-func (e *Engine) GetTaskToDoList(ctx context.Context, userID, processName string, asc bool, offset, limit int) ([]model.TaskView, error) {
-	return e.repo.ListTaskToDo(ctx, userID, processName, asc, offset, limit)
+// GetTaskToDoList 获取特定用户待办任务列表（含分页和总数）。
+func (e *Engine) GetTaskToDoList(ctx context.Context, userID, processName string, asc bool, pageNo, pageSize int) (*model.PageData[model.TaskView], error) {
+	offset := (pageNo - 1) * pageSize
+	tasks, err := e.repo.ListTaskToDo(ctx, userID, processName, asc, offset, pageSize)
+	if err != nil {
+		return nil, err
+	}
+	count, err := e.repo.CountTaskToDo(ctx, userID, processName)
+	if err != nil {
+		return nil, err
+	}
+	return model.NewPageData[model.TaskView](pageNo, pageSize).SetData(tasks).SetCount(count), nil
 }
 
-// GetTaskFinishedList 获取特定用户已完成任务列表。
-func (e *Engine) GetTaskFinishedList(ctx context.Context, userID, processName string, ignoreStartByMe, asc bool, offset, limit int) ([]model.TaskView, error) {
-	return e.repo.ListTaskFinished(ctx, userID, processName, ignoreStartByMe, asc, offset, limit)
+// GetTaskFinishedList 获取特定用户已完成任务列表（含分页和总数）。
+func (e *Engine) GetTaskFinishedList(ctx context.Context, userID, processName string, ignoreStartByMe, asc bool, pageNo, pageSize int) (*model.PageData[model.TaskView], error) {
+	offset := (pageNo - 1) * pageSize
+	tasks, err := e.repo.ListTaskFinished(ctx, userID, processName, ignoreStartByMe, asc, offset, pageSize)
+	if err != nil {
+		return nil, err
+	}
+	count, err := e.repo.CountTaskFinished(ctx, userID, processName, ignoreStartByMe)
+	if err != nil {
+		return nil, err
+	}
+	return model.NewPageData[model.TaskView](pageNo, pageSize).SetData(tasks).SetCount(count), nil
 }
 
 // TaskUpstreamNodeList 根据流程定义，列出 task 所在节点的所有上游节点。

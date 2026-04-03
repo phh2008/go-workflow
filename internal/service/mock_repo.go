@@ -25,16 +25,19 @@ type mockRepo struct {
 	CreateInstanceFunc          func(ctx context.Context, inst *entity.ProcInst) error
 	UpdateInstanceFunc          func(ctx context.Context, id int, updates map[string]any) error
 	GetInstanceInfoFunc         func(ctx context.Context, instID int) (model.InstanceView, error)
-	ListInstanceStartByUserFunc func(ctx context.Context, userID, processName string, offset, limit int) ([]model.InstanceView, error)
-	GetProcessIDByInstIDFunc    func(ctx context.Context, instID int) (int, error)
-	GetProcessNameByInstIDFunc  func(ctx context.Context, instID int) (string, error)
+	ListInstanceStartByUserFunc     func(ctx context.Context, userID, processName string, offset, limit int) ([]model.InstanceView, error)
+	CountInstanceStartByUserFunc    func(ctx context.Context, userID, processName string) (int64, error)
+	GetProcessIDByInstIDFunc        func(ctx context.Context, instID int) (int, error)
+	GetProcessNameByInstIDFunc      func(ctx context.Context, instID int) (string, error)
 
 	// 任务
 	CreateTasksFunc               func(ctx context.Context, tasks []entity.ProcTask) error
 	UpdateTaskFunc                func(ctx context.Context, id int, updates map[string]any) error
 	GetTaskInfoFunc               func(ctx context.Context, taskID int) (model.TaskView, error)
 	ListTaskToDoFunc              func(ctx context.Context, userID, processName string, asc bool, offset, limit int) ([]model.TaskView, error)
+	CountTaskToDoFunc             func(ctx context.Context, userID, processName string) (int64, error)
 	ListTaskFinishedFunc          func(ctx context.Context, userID, processName string, ignoreStartByMe, asc bool, offset, limit int) ([]model.TaskView, error)
+	CountTaskFinishedFunc         func(ctx context.Context, userID, processName string, ignoreStartByMe bool) (int64, error)
 	ListInstanceTaskHistoryFunc   func(ctx context.Context, instID int) ([]model.TaskView, error)
 	GetTaskNodeStatusFunc         func(ctx context.Context, instID int, nodeID, batchCode string) (int, int, int, error)
 	GetNotFinishUsersFunc         func(ctx context.Context, instID int, nodeID string) ([]string, error)
@@ -44,7 +47,6 @@ type mockRepo struct {
 	DeleteTasksByBatchCodeFunc    func(ctx context.Context, batchCode string) error
 	DeleteTaskByIDFunc            func(ctx context.Context, taskID int) error
 	RevokeTaskFunc                func(ctx context.Context, taskID int) error
-	GenerateUUIDFunc              func(ctx context.Context) (string, error)
 	GetNextNodeIDByPrevNodeIDFunc func(ctx context.Context, prevNodeID string) (string, error)
 	GetUpstreamNodesFunc          func(ctx context.Context, nodeID string) ([]model.Node, error)
 
@@ -140,6 +142,12 @@ func (m *mockRepo) ListInstanceStartByUser(ctx context.Context, userID, processN
 	}
 	return nil, nil
 }
+func (m *mockRepo) CountInstanceStartByUser(ctx context.Context, userID, processName string) (int64, error) {
+	if m.CountInstanceStartByUserFunc != nil {
+		return m.CountInstanceStartByUserFunc(ctx, userID, processName)
+	}
+	return 0, nil
+}
 func (m *mockRepo) GetProcessIDByInstID(ctx context.Context, instID int) (int, error) {
 	if m.GetProcessIDByInstIDFunc != nil {
 		return m.GetProcessIDByInstIDFunc(ctx, instID)
@@ -176,11 +184,23 @@ func (m *mockRepo) ListTaskToDo(ctx context.Context, userID, processName string,
 	}
 	return nil, nil
 }
+func (m *mockRepo) CountTaskToDo(ctx context.Context, userID, processName string) (int64, error) {
+	if m.CountTaskToDoFunc != nil {
+		return m.CountTaskToDoFunc(ctx, userID, processName)
+	}
+	return 0, nil
+}
 func (m *mockRepo) ListTaskFinished(ctx context.Context, userID, processName string, ignoreStartByMe, asc bool, offset, limit int) ([]model.TaskView, error) {
 	if m.ListTaskFinishedFunc != nil {
 		return m.ListTaskFinishedFunc(ctx, userID, processName, ignoreStartByMe, asc, offset, limit)
 	}
 	return nil, nil
+}
+func (m *mockRepo) CountTaskFinished(ctx context.Context, userID, processName string, ignoreStartByMe bool) (int64, error) {
+	if m.CountTaskFinishedFunc != nil {
+		return m.CountTaskFinishedFunc(ctx, userID, processName, ignoreStartByMe)
+	}
+	return 0, nil
 }
 func (m *mockRepo) ListInstanceTaskHistory(ctx context.Context, instID int) ([]model.TaskView, error) {
 	if m.ListInstanceTaskHistoryFunc != nil {

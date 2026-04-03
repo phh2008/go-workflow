@@ -146,6 +146,19 @@ func (r *GormRepo) ListInstanceStartByUser(ctx context.Context, userID, processN
 	return instances, nil
 }
 
+// CountInstanceStartByUser 获取特定用户发起的流程实例总数。
+func (r *GormRepo) CountInstanceStartByUser(ctx context.Context, userID, processName string) (int64, error) {
+	condition := map[string]any{
+		"userid":   userID,
+		"procname": processName,
+	}
+	var count int64
+	if err := r.ctxDB(ctx).Raw(sqlCountInstanceStartByUser, condition).Scan(&count).Error; err != nil {
+		return 0, err
+	}
+	return count, nil
+}
+
 // GetProcessIDByInstID 根据流程实例ID获取流程ID。
 func (r *GormRepo) GetProcessIDByInstID(ctx context.Context, instID int) (int, error) {
 	var id int
@@ -211,6 +224,19 @@ func (r *GormRepo) ListTaskToDo(ctx context.Context, userID, processName string,
 	return tasks, nil
 }
 
+// CountTaskToDo 获取特定用户待办任务总数。
+func (r *GormRepo) CountTaskToDo(ctx context.Context, userID, processName string) (int64, error) {
+	condition := map[string]any{
+		"userid":   userID,
+		"procname": processName,
+	}
+	var count int64
+	if err := r.ctxDB(ctx).Raw(sqlCountTaskToDo, condition).Scan(&count).Error; err != nil {
+		return 0, err
+	}
+	return count, nil
+}
+
 // ListTaskFinished 获取特定用户已完成任务列表。
 func (r *GormRepo) ListTaskFinished(ctx context.Context, userID, processName string, ignoreStartByMe, asc bool, offset, limit int) ([]model.TaskView, error) {
 	var tasks []model.TaskView
@@ -234,6 +260,24 @@ func (r *GormRepo) ListTaskFinished(ctx context.Context, userID, processName str
 		return nil, err
 	}
 	return tasks, nil
+}
+
+// CountTaskFinished 获取特定用户已完成任务总数。
+func (r *GormRepo) CountTaskFinished(ctx context.Context, userID, processName string, ignoreStartByMe bool) (int64, error) {
+	// 当传入 UserID 为空时，IgnoreStartByMe 参数强制变为 False
+	if userID == "" {
+		ignoreStartByMe = false
+	}
+	condition := map[string]any{
+		"userid":          userID,
+		"procname":        processName,
+		"ignorestartbyme": ignoreStartByMe,
+	}
+	var count int64
+	if err := r.ctxDB(ctx).Raw(sqlCountTaskFinished, condition).Scan(&count).Error; err != nil {
+		return 0, err
+	}
+	return count, nil
 }
 
 // ListInstanceTaskHistory 获取流程实例下所有任务历史记录。

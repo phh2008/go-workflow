@@ -190,11 +190,20 @@ func (e *Engine) GetInstanceInfo(ctx context.Context, instID int) (model.Instanc
 	return e.repo.GetInstanceInfo(ctx, instID)
 }
 
-// GetInstanceStartByUser 获取起始人为特定用户的流程实例。
+// GetInstanceStartByUser 获取起始人为特定用户的流程实例（含分页和总数）。
 // userID 传入空则获取所有用户的流程实例。
 // processName 指定流程名称，传入空则为全部。
-func (e *Engine) GetInstanceStartByUser(ctx context.Context, userID, processName string, offset, limit int) ([]model.InstanceView, error) {
-	return e.repo.ListInstanceStartByUser(ctx, userID, processName, offset, limit)
+func (e *Engine) GetInstanceStartByUser(ctx context.Context, userID, processName string, pageNo, pageSize int) (*model.PageData[model.InstanceView], error) {
+	offset := (pageNo - 1) * pageSize
+	instances, err := e.repo.ListInstanceStartByUser(ctx, userID, processName, offset, pageSize)
+	if err != nil {
+		return nil, err
+	}
+	count, err := e.repo.CountInstanceStartByUser(ctx, userID, processName)
+	if err != nil {
+		return nil, err
+	}
+	return model.NewPageData[model.InstanceView](pageNo, pageSize).SetData(instances).SetCount(count), nil
 }
 
 // startNodeHandle 开始节点处理。开始节点是一个特殊的任务节点：

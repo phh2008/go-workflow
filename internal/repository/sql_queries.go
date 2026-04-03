@@ -49,6 +49,22 @@ const sqlListInstanceStartByUser = "" +
 	" ORDER BY a.id\n" +
 	" LIMIT @index, @rows"
 
+// sqlCountInstanceStartByUser 获取特定用户发起的流程实例总数
+const sqlCountInstanceStartByUser = "" +
+	"WITH tmp_procinst AS (\n" +
+	"    SELECT id\n" +
+	"      FROM proc_inst\n" +
+	"     WHERE CASE WHEN '' = @userid THEN TRUE ELSE starter = @userid END\n" +
+	"    UNION ALL\n" +
+	"    SELECT proc_inst_id AS id\n" +
+	"      FROM hist_proc_inst\n" +
+	"     WHERE CASE WHEN '' = @userid THEN TRUE ELSE starter = @userid END\n" +
+	")\n" +
+	"SELECT COUNT(*)\n" +
+	"  FROM tmp_procinst a\n" +
+	"  JOIN proc_def b ON a.proc_id = b.id\n" +
+	" WHERE CASE WHEN '' = @procname THEN TRUE ELSE b.name = @procname END"
+
 const sqlGetProcessIDByInstID = "SELECT proc_id FROM proc_inst WHERE id = ?"
 
 const sqlGetProcessNameByInstID = "" +
@@ -96,6 +112,15 @@ const sqlGetTaskToDoList = "" +
 	"   {{SORT}}\n" +
 	" LIMIT @index, @rows"
 
+// sqlCountTaskToDo 获取特定用户待办任务总数
+const sqlCountTaskToDo = "" +
+	"SELECT COUNT(*)\n" +
+	"  FROM proc_task a\n" +
+	"  JOIN proc_def b ON a.proc_id = b.id\n" +
+	" WHERE CASE WHEN '' = @userid THEN TRUE ELSE a.user_id = @userid END\n" +
+	"   AND a.is_finished = 0\n" +
+	"   AND CASE WHEN '' = @procname THEN TRUE ELSE b.name = @procname END"
+
 // sqlGetTaskFinishedList 获取特定用户已完成任务列表（CTE 合并历史数据）
 const sqlGetTaskFinishedList = "" +
 	"WITH tmp_task AS (\n" +
@@ -124,6 +149,29 @@ const sqlGetTaskFinishedList = "" +
 	" ORDER BY a.finished_time\n" +
 	"   {{SORT}}\n" +
 	" LIMIT @index, @rows"
+
+// sqlCountTaskFinished 获取特定用户已完成任务总数
+const sqlCountTaskFinished = "" +
+	"WITH tmp_task AS (\n" +
+	"    SELECT id, proc_id, proc_inst_id, business_id, starter, node_id, node_name, prev_node_id,\n" +
+	"           is_cosigned, batch_code, user_id, `status`, is_finished, `comment`,\n" +
+	"           proc_inst_create_time, create_time, finished_time\n" +
+	"      FROM proc_task\n" +
+	"     WHERE CASE WHEN '' = @userid THEN TRUE ELSE user_id = @userid END\n" +
+	"    UNION ALL\n" +
+	"    SELECT task_id AS id, proc_id, proc_inst_id, business_id, starter, node_id, node_name,\n" +
+	"           prev_node_id, is_cosigned, batch_code, user_id, `status`, is_finished, `comment`,\n" +
+	"           proc_inst_create_time, create_time, finished_time\n" +
+	"      FROM hist_proc_task\n" +
+	"     WHERE CASE WHEN '' = @userid THEN TRUE ELSE user_id = @userid END\n" +
+	")\n" +
+	"SELECT COUNT(*)\n" +
+	"  FROM tmp_task a\n" +
+	"  JOIN proc_def b ON a.proc_id = b.id\n" +
+	" WHERE a.is_finished = 1\n" +
+	"   AND a.`status` != 0\n" +
+	"   AND CASE WHEN '' = @procname THEN TRUE ELSE b.name = @procname END\n" +
+	"   AND CASE WHEN true = @ignorestartbyme THEN a.starter != @userid ELSE TRUE END"
 
 // sqlGetInstanceTaskHistory 获取流程实例下任务历史记录（CTE 合并历史数据）
 const sqlGetInstanceTaskHistory = "" +

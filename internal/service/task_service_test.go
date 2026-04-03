@@ -71,13 +71,19 @@ func TestGetTaskToDoList(t *testing.T) {
 		}
 		return expected, nil
 	}
+	repo.CountTaskToDoFunc = func(ctx context.Context, userID, processName string) (int64, error) {
+		return 2, nil
+	}
 
-	result, err := eng.GetTaskToDoList(ctx, "user1", "请假", true, 0, 10)
+	result, err := eng.GetTaskToDoList(ctx, "user1", "请假", true, 1, 10)
 	if err != nil {
 		t.Fatalf("GetTaskToDoList 返回错误: %v", err)
 	}
-	if len(result) != 2 {
-		t.Fatalf("返回数量 = %d, 期望 2", len(result))
+	if len(result.Data) != 2 {
+		t.Fatalf("返回数量 = %d, 期望 2", len(result.Data))
+	}
+	if result.Count != 2 {
+		t.Errorf("Count = %d, 期望 2", result.Count)
 	}
 	if callCount != 1 {
 		t.Errorf("ListTaskToDo 调用次数 = %d, 期望 1", callCount)
@@ -103,13 +109,19 @@ func TestGetTaskFinishedList(t *testing.T) {
 		}
 		return expected, nil
 	}
+	repo.CountTaskFinishedFunc = func(ctx context.Context, userID, processName string, ignoreStartByMe bool) (int64, error) {
+		return 1, nil
+	}
 
-	result, err := eng.GetTaskFinishedList(ctx, "user2", "", true, false, 0, 20)
+	result, err := eng.GetTaskFinishedList(ctx, "user2", "", true, false, 1, 20)
 	if err != nil {
 		t.Fatalf("GetTaskFinishedList 返回错误: %v", err)
 	}
-	if len(result) != 1 {
-		t.Fatalf("返回数量 = %d, 期望 1", len(result))
+	if len(result.Data) != 1 {
+		t.Fatalf("返回数量 = %d, 期望 1", len(result.Data))
+	}
+	if result.Count != 1 {
+		t.Errorf("Count = %d, 期望 1", result.Count)
 	}
 }
 

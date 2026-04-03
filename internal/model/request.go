@@ -46,6 +46,12 @@ func (p *PageData[T]) SetData(data []T) *PageData[T] {
 	return p
 }
 
+// SetCount 设置总记录数并返回自身，支持链式调用。
+func (p *PageData[T]) SetCount(count int64) *PageData[T] {
+	p.Count = count
+	return p
+}
+
 // --- 流程定义请求 ---
 
 // ProcessListReq 流程定义列表查询请求。

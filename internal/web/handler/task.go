@@ -157,12 +157,12 @@ func (h *TaskHandler) ToDoList(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, err.Error())
 		return
 	}
-	tasks, err := h.engine.GetTaskToDoList(c.Request.Context(), req.UserID, req.ProcessName, req.Asc, req.Offset(), req.GetPageSize())
+	result, err := h.engine.GetTaskToDoList(c.Request.Context(), req.UserID, req.ProcessName, req.Asc, req.GetPageNo(), req.GetPageSize())
 	if err != nil {
 		c.JSON(http.StatusBadRequest, err.Error())
 		return
 	}
-	c.JSON(http.StatusOK, tasks)
+	c.JSON(http.StatusOK, result)
 }
 
 // @Summary      获取已办任务
@@ -184,12 +184,12 @@ func (h *TaskHandler) FinishedList(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, err.Error())
 		return
 	}
-	tasks, err := h.engine.GetTaskFinishedList(c.Request.Context(), req.UserID, req.ProcessName, req.IgnoreStartByMe, req.Asc, req.Offset(), req.GetPageSize())
+	result, err := h.engine.GetTaskFinishedList(c.Request.Context(), req.UserID, req.ProcessName, req.IgnoreStartByMe, req.Asc, req.GetPageNo(), req.GetPageSize())
 	if err != nil {
 		c.JSON(http.StatusBadRequest, err.Error())
 		return
 	}
-	c.JSON(http.StatusOK, tasks)
+	c.JSON(http.StatusOK, result)
 }
 
 // @Summary      获取本任务所在节点的所有上游节点

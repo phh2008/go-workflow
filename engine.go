@@ -97,9 +97,9 @@ func (e *Engine) GetInstanceInfo(ctx context.Context, instID int) (model.Instanc
 	return e.internal.GetInstanceInfo(ctx, instID)
 }
 
-// GetInstanceStartByUser 获取用户发起的流程实例列表。
-func (e *Engine) GetInstanceStartByUser(ctx context.Context, userID, processName string, offset, limit int) ([]model.InstanceView, error) {
-	return e.internal.GetInstanceStartByUser(ctx, userID, processName, offset, limit)
+// GetInstanceStartByUser 获取用户发起的流程实例列表（含分页和总数）。
+func (e *Engine) GetInstanceStartByUser(ctx context.Context, userID, processName string, pageNo, pageSize int) (*model.PageData[model.InstanceView], error) {
+	return e.internal.GetInstanceStartByUser(ctx, userID, processName, pageNo, pageSize)
 }
 
 // --- 任务 ---
@@ -129,14 +129,14 @@ func (e *Engine) GetTaskInfo(ctx context.Context, taskID int) (model.TaskView, e
 	return e.internal.GetTaskInfo(ctx, taskID)
 }
 
-// GetTaskToDoList 获取待办任务列表。
-func (e *Engine) GetTaskToDoList(ctx context.Context, userID, processName string, asc bool, offset, limit int) ([]model.TaskView, error) {
-	return e.internal.GetTaskToDoList(ctx, userID, processName, asc, offset, limit)
+// GetTaskToDoList 获取待办任务列表（含分页和总数）。
+func (e *Engine) GetTaskToDoList(ctx context.Context, userID, processName string, asc bool, pageNo, pageSize int) (*model.PageData[model.TaskView], error) {
+	return e.internal.GetTaskToDoList(ctx, userID, processName, asc, pageNo, pageSize)
 }
 
-// GetTaskFinishedList 获取已办任务列表。
-func (e *Engine) GetTaskFinishedList(ctx context.Context, userID, processName string, ignoreStartByMe, asc bool, offset, limit int) ([]model.TaskView, error) {
-	return e.internal.GetTaskFinishedList(ctx, userID, processName, ignoreStartByMe, asc, offset, limit)
+// GetTaskFinishedList 获取已办任务列表（含分页和总数）。
+func (e *Engine) GetTaskFinishedList(ctx context.Context, userID, processName string, ignoreStartByMe, asc bool, pageNo, pageSize int) (*model.PageData[model.TaskView], error) {
+	return e.internal.GetTaskFinishedList(ctx, userID, processName, ignoreStartByMe, asc, pageNo, pageSize)
 }
 
 // TaskUpstreamNodeList 获取任务上游节点列表。
