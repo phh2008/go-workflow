@@ -59,7 +59,7 @@ func (e *MyEvent) MyEvent_Notify(ProcessInstanceID int, CurrentNode *model.Node,
 	slog.Info("通知节点中对应人员", "流程", processName, "节点", CurrentNode.NodeName)
 	if CurrentNode.NodeType == model.EndNode {
 		slog.Info("流程结束", "流程", processName)
-		variables, err := e.eng.ResolveVariables(ctx, ProcessInstanceID, []string{"$starter"})
+		variables, err := e.eng.ResolveVariables(ctx, model.ResolveVariablesParams{InstanceID: ProcessInstanceID, Variables: []string{"$starter"}})
 		if err != nil {
 			return err
 		}

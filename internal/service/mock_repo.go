@@ -5,17 +5,18 @@ import (
 
 	"github.com/Bunny3th/easy-workflow/internal/entity"
 	"github.com/Bunny3th/easy-workflow/internal/model"
+	"github.com/Bunny3th/easy-workflow/internal/repository"
 	"gorm.io/gorm"
 )
 
 // mockRepo 是 repository.Repository 接口的 mock 实现，仅用于测试。
 type mockRepo struct {
 	// 流程定义
-	GetProcessIDByNameFunc func(ctx context.Context, name, source string) (int, int, error)
+	GetProcessIDByNameFunc func(ctx context.Context, p repository.GetProcIDByNameParams) (int, int, error)
 	GetProcessResourceFunc func(ctx context.Context, procID int) (string, error)
 	ListProcessDefFunc     func(ctx context.Context, source string) ([]entity.ProcDef, error)
 	ArchiveProcDefFunc     func(ctx context.Context, name, source string) error
-	UpdateProcDefFunc      func(ctx context.Context, name, source string, resource, userID string, version int) error
+	UpdateProcDefFunc      func(ctx context.Context, p repository.UpdateProcDefParams) error
 	ArchiveExecutionsFunc  func(ctx context.Context, procID int) error
 	DeleteExecutionsFunc   func(ctx context.Context, procID int) error
 	SaveExecutionsFunc     func(ctx context.Context, executions []entity.ProcExecution) error
@@ -25,34 +26,34 @@ type mockRepo struct {
 	CreateInstanceFunc          func(ctx context.Context, inst *entity.ProcInst) error
 	UpdateInstanceFunc          func(ctx context.Context, id int, updates map[string]any) error
 	GetInstanceInfoFunc         func(ctx context.Context, instID int) (model.InstanceView, error)
-	ListInstanceStartByUserFunc     func(ctx context.Context, userID, processName string, offset, limit int) ([]model.InstanceView, error)
-	CountInstanceStartByUserFunc    func(ctx context.Context, userID, processName string) (int64, error)
-	GetProcessIDByInstIDFunc        func(ctx context.Context, instID int) (int, error)
-	GetProcessNameByInstIDFunc      func(ctx context.Context, instID int) (string, error)
+	ListInstanceStartByUserFunc func(ctx context.Context, p repository.ListInstByUserParams) ([]model.InstanceView, error)
+	CountInstanceStartByUserFunc func(ctx context.Context, p repository.CountByUserParams) (int64, error)
+	GetProcessIDByInstIDFunc    func(ctx context.Context, instID int) (int, error)
+	GetProcessNameByInstIDFunc  func(ctx context.Context, instID int) (string, error)
 
 	// 任务
-	CreateTasksFunc               func(ctx context.Context, tasks []entity.ProcTask) error
-	UpdateTaskFunc                func(ctx context.Context, id int, updates map[string]any) error
-	GetTaskInfoFunc               func(ctx context.Context, taskID int) (model.TaskView, error)
-	ListTaskToDoFunc              func(ctx context.Context, userID, processName string, asc bool, offset, limit int) ([]model.TaskView, error)
-	CountTaskToDoFunc             func(ctx context.Context, userID, processName string) (int64, error)
-	ListTaskFinishedFunc          func(ctx context.Context, userID, processName string, ignoreStartByMe, asc bool, offset, limit int) ([]model.TaskView, error)
-	CountTaskFinishedFunc         func(ctx context.Context, userID, processName string, ignoreStartByMe bool) (int64, error)
-	ListInstanceTaskHistoryFunc   func(ctx context.Context, instID int) ([]model.TaskView, error)
-	GetTaskNodeStatusFunc         func(ctx context.Context, instID int, nodeID, batchCode string) (int, int, int, error)
-	GetNotFinishUsersFunc         func(ctx context.Context, instID int, nodeID string) ([]string, error)
-	GetPrevNodeBatchCodeFunc      func(ctx context.Context, taskID int) (string, error)
-	HasRejectInBatchFunc          func(ctx context.Context, batchCode string) (bool, error)
-	UpdateTasksByBatchCodeFunc    func(ctx context.Context, batchCode string, updates map[string]any) error
-	DeleteTasksByBatchCodeFunc    func(ctx context.Context, batchCode string) error
-	DeleteTaskByIDFunc            func(ctx context.Context, taskID int) error
-	RevokeTaskFunc                func(ctx context.Context, taskID int) error
+	CreateTasksFunc             func(ctx context.Context, tasks []entity.ProcTask) error
+	UpdateTaskFunc              func(ctx context.Context, id int, updates map[string]any) error
+	GetTaskInfoFunc             func(ctx context.Context, taskID int) (model.TaskView, error)
+	ListTaskToDoFunc            func(ctx context.Context, p repository.ListToDoParams) ([]model.TaskView, error)
+	CountTaskToDoFunc           func(ctx context.Context, p repository.CountByUserParams) (int64, error)
+	ListTaskFinishedFunc        func(ctx context.Context, p repository.ListFinishedParams) ([]model.TaskView, error)
+	CountTaskFinishedFunc       func(ctx context.Context, p repository.CountFinishedParams) (int64, error)
+	ListInstanceTaskHistoryFunc func(ctx context.Context, instID int) ([]model.TaskView, error)
+	GetTaskNodeStatusFunc       func(ctx context.Context, p repository.TaskNodeStatusParams) (int, int, int, error)
+	GetNotFinishUsersFunc       func(ctx context.Context, p repository.NotFinishUsersParams) ([]string, error)
+	GetPrevNodeBatchCodeFunc    func(ctx context.Context, taskID int) (string, error)
+	HasRejectInBatchFunc        func(ctx context.Context, batchCode string) (bool, error)
+	UpdateTasksByBatchCodeFunc  func(ctx context.Context, batchCode string, updates map[string]any) error
+	DeleteTasksByBatchCodeFunc  func(ctx context.Context, batchCode string) error
+	DeleteTaskByIDFunc          func(ctx context.Context, taskID int) error
+	RevokeTaskFunc              func(ctx context.Context, taskID int) error
 	GetNextNodeIDByPrevNodeIDFunc func(ctx context.Context, prevNodeID string) (string, error)
-	GetUpstreamNodesFunc          func(ctx context.Context, nodeID string) ([]model.Node, error)
+	GetUpstreamNodesFunc        func(ctx context.Context, nodeID string) ([]model.Node, error)
 
 	// 执行关系
 	GetStartNodeIDFunc func(ctx context.Context, procID int) (string, error)
-	IsNodeFinishedFunc func(ctx context.Context, instID, nodeID string) (bool, error)
+	IsNodeFinishedFunc func(ctx context.Context, p repository.IsNodeFinishedParams) (bool, error)
 
 	// 变量
 	SaveVariableFunc     func(ctx context.Context, instID int, variables []model.Variable) error
@@ -64,9 +65,9 @@ type mockRepo struct {
 }
 
 func (m *mockRepo) DB() *gorm.DB { return nil }
-func (m *mockRepo) GetProcessIDByName(ctx context.Context, name, source string) (int, int, error) {
+func (m *mockRepo) GetProcessIDByName(ctx context.Context, p repository.GetProcIDByNameParams) (int, int, error) {
 	if m.GetProcessIDByNameFunc != nil {
-		return m.GetProcessIDByNameFunc(ctx, name, source)
+		return m.GetProcessIDByNameFunc(ctx, p)
 	}
 	return 0, 0, nil
 }
@@ -88,9 +89,9 @@ func (m *mockRepo) ArchiveProcDef(ctx context.Context, name, source string) erro
 	}
 	return nil
 }
-func (m *mockRepo) UpdateProcDef(ctx context.Context, name, source string, resource, userID string, version int) error {
+func (m *mockRepo) UpdateProcDef(ctx context.Context, p repository.UpdateProcDefParams) error {
 	if m.UpdateProcDefFunc != nil {
-		return m.UpdateProcDefFunc(ctx, name, source, resource, userID, version)
+		return m.UpdateProcDefFunc(ctx, p)
 	}
 	return nil
 }
@@ -136,15 +137,15 @@ func (m *mockRepo) GetInstanceInfo(ctx context.Context, instID int) (model.Insta
 	}
 	return model.InstanceView{}, nil
 }
-func (m *mockRepo) ListInstanceStartByUser(ctx context.Context, userID, processName string, offset, limit int) ([]model.InstanceView, error) {
+func (m *mockRepo) ListInstanceStartByUser(ctx context.Context, p repository.ListInstByUserParams) ([]model.InstanceView, error) {
 	if m.ListInstanceStartByUserFunc != nil {
-		return m.ListInstanceStartByUserFunc(ctx, userID, processName, offset, limit)
+		return m.ListInstanceStartByUserFunc(ctx, p)
 	}
 	return nil, nil
 }
-func (m *mockRepo) CountInstanceStartByUser(ctx context.Context, userID, processName string) (int64, error) {
+func (m *mockRepo) CountInstanceStartByUser(ctx context.Context, p repository.CountByUserParams) (int64, error) {
 	if m.CountInstanceStartByUserFunc != nil {
-		return m.CountInstanceStartByUserFunc(ctx, userID, processName)
+		return m.CountInstanceStartByUserFunc(ctx, p)
 	}
 	return 0, nil
 }
@@ -178,27 +179,27 @@ func (m *mockRepo) GetTaskInfo(ctx context.Context, taskID int) (model.TaskView,
 	}
 	return model.TaskView{}, nil
 }
-func (m *mockRepo) ListTaskToDo(ctx context.Context, userID, processName string, asc bool, offset, limit int) ([]model.TaskView, error) {
+func (m *mockRepo) ListTaskToDo(ctx context.Context, p repository.ListToDoParams) ([]model.TaskView, error) {
 	if m.ListTaskToDoFunc != nil {
-		return m.ListTaskToDoFunc(ctx, userID, processName, asc, offset, limit)
+		return m.ListTaskToDoFunc(ctx, p)
 	}
 	return nil, nil
 }
-func (m *mockRepo) CountTaskToDo(ctx context.Context, userID, processName string) (int64, error) {
+func (m *mockRepo) CountTaskToDo(ctx context.Context, p repository.CountByUserParams) (int64, error) {
 	if m.CountTaskToDoFunc != nil {
-		return m.CountTaskToDoFunc(ctx, userID, processName)
+		return m.CountTaskToDoFunc(ctx, p)
 	}
 	return 0, nil
 }
-func (m *mockRepo) ListTaskFinished(ctx context.Context, userID, processName string, ignoreStartByMe, asc bool, offset, limit int) ([]model.TaskView, error) {
+func (m *mockRepo) ListTaskFinished(ctx context.Context, p repository.ListFinishedParams) ([]model.TaskView, error) {
 	if m.ListTaskFinishedFunc != nil {
-		return m.ListTaskFinishedFunc(ctx, userID, processName, ignoreStartByMe, asc, offset, limit)
+		return m.ListTaskFinishedFunc(ctx, p)
 	}
 	return nil, nil
 }
-func (m *mockRepo) CountTaskFinished(ctx context.Context, userID, processName string, ignoreStartByMe bool) (int64, error) {
+func (m *mockRepo) CountTaskFinished(ctx context.Context, p repository.CountFinishedParams) (int64, error) {
 	if m.CountTaskFinishedFunc != nil {
-		return m.CountTaskFinishedFunc(ctx, userID, processName, ignoreStartByMe)
+		return m.CountTaskFinishedFunc(ctx, p)
 	}
 	return 0, nil
 }
@@ -208,15 +209,15 @@ func (m *mockRepo) ListInstanceTaskHistory(ctx context.Context, instID int) ([]m
 	}
 	return nil, nil
 }
-func (m *mockRepo) GetTaskNodeStatus(ctx context.Context, instID int, nodeID, batchCode string) (int, int, int, error) {
+func (m *mockRepo) GetTaskNodeStatus(ctx context.Context, p repository.TaskNodeStatusParams) (int, int, int, error) {
 	if m.GetTaskNodeStatusFunc != nil {
-		return m.GetTaskNodeStatusFunc(ctx, instID, nodeID, batchCode)
+		return m.GetTaskNodeStatusFunc(ctx, p)
 	}
 	return 0, 0, 0, nil
 }
-func (m *mockRepo) GetNotFinishUsers(ctx context.Context, instID int, nodeID string) ([]string, error) {
+func (m *mockRepo) GetNotFinishUsers(ctx context.Context, p repository.NotFinishUsersParams) ([]string, error) {
 	if m.GetNotFinishUsersFunc != nil {
-		return m.GetNotFinishUsersFunc(ctx, instID, nodeID)
+		return m.GetNotFinishUsersFunc(ctx, p)
 	}
 	return nil, nil
 }
@@ -274,9 +275,9 @@ func (m *mockRepo) GetStartNodeID(ctx context.Context, procID int) (string, erro
 	}
 	return "", nil
 }
-func (m *mockRepo) IsNodeFinished(ctx context.Context, instID, nodeID string) (bool, error) {
+func (m *mockRepo) IsNodeFinished(ctx context.Context, p repository.IsNodeFinishedParams) (bool, error) {
 	if m.IsNodeFinishedFunc != nil {
-		return m.IsNodeFinishedFunc(ctx, instID, nodeID)
+		return m.IsNodeFinishedFunc(ctx, p)
 	}
 	return true, nil
 }

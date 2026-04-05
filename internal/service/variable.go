@@ -21,8 +21,8 @@ func (e *Engine) RemoveVarPrefix(ctx context.Context, variable string) string {
 }
 
 // ResolveVariables 解析变量，获取并设置其 value，返回 map（非变量则原样存储）。
-func (e *Engine) ResolveVariables(ctx context.Context, instID int, variables []string) (map[string]string, error) {
-	return e.repo.ResolveVariables(ctx, instID, variables)
+func (e *Engine) ResolveVariables(ctx context.Context, params model.ResolveVariablesParams) (map[string]string, error) {
+	return e.repo.ResolveVariables(ctx, params.InstanceID, params.Variables)
 }
 
 // ParseVariable 解析变量，返回变量数组

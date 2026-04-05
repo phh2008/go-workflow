@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/Bunny3th/easy-workflow/internal/model"
+	"github.com/Bunny3th/easy-workflow/internal/repository"
 )
 
 // ---- GetTaskInfo ----
@@ -58,24 +59,24 @@ func TestGetTaskToDoList(t *testing.T) {
 		{TaskID: 2, NodeName: "审批2", UserID: "user1"},
 	}
 	callCount := 0
-	repo.ListTaskToDoFunc = func(ctx context.Context, userID, processName string, asc bool, offset, limit int) ([]model.TaskView, error) {
+	repo.ListTaskToDoFunc = func(ctx context.Context, p repository.ListToDoParams) ([]model.TaskView, error) {
 		callCount++
-		if userID != "user1" {
-			t.Errorf("userID = %q, 期望 %q", userID, "user1")
+		if p.UserID != "user1" {
+			t.Errorf("userID = %q, 期望 %q", p.UserID, "user1")
 		}
-		if processName != "请假" {
-			t.Errorf("processName = %q, 期望 %q", processName, "请假")
+		if p.ProcessName != "请假" {
+			t.Errorf("processName = %q, 期望 %q", p.ProcessName, "请假")
 		}
-		if asc != true {
-			t.Errorf("asc = %v, 期望 true", asc)
+		if p.Asc != true {
+			t.Errorf("asc = %v, 期望 true", p.Asc)
 		}
 		return expected, nil
 	}
-	repo.CountTaskToDoFunc = func(ctx context.Context, userID, processName string) (int64, error) {
+	repo.CountTaskToDoFunc = func(ctx context.Context, p repository.CountByUserParams) (int64, error) {
 		return 2, nil
 	}
 
-	result, err := eng.GetTaskToDoList(ctx, "user1", "请假", true, 1, 10)
+	result, err := eng.GetTaskToDoList(ctx, model.TaskToDoListParams{UserID: "user1", ProcessName: "请假", Asc: true, PageNo: 1, PageSize: 10})
 	if err != nil {
 		t.Fatalf("GetTaskToDoList 返回错误: %v", err)
 	}
@@ -100,20 +101,20 @@ func TestGetTaskFinishedList(t *testing.T) {
 	expected := []model.TaskView{
 		{TaskID: 3, NodeName: "已审批1", UserID: "user2"},
 	}
-	repo.ListTaskFinishedFunc = func(ctx context.Context, userID, processName string, ignoreStartByMe, asc bool, offset, limit int) ([]model.TaskView, error) {
-		if userID != "user2" {
-			t.Errorf("userID = %q, 期望 %q", userID, "user2")
+	repo.ListTaskFinishedFunc = func(ctx context.Context, p repository.ListFinishedParams) ([]model.TaskView, error) {
+		if p.UserID != "user2" {
+			t.Errorf("userID = %q, 期望 %q", p.UserID, "user2")
 		}
-		if ignoreStartByMe != true {
-			t.Errorf("ignoreStartByMe = %v, 期望 true", ignoreStartByMe)
+		if p.IgnoreStartByMe != true {
+			t.Errorf("ignoreStartByMe = %v, 期望 true", p.IgnoreStartByMe)
 		}
 		return expected, nil
 	}
-	repo.CountTaskFinishedFunc = func(ctx context.Context, userID, processName string, ignoreStartByMe bool) (int64, error) {
+	repo.CountTaskFinishedFunc = func(ctx context.Context, p repository.CountFinishedParams) (int64, error) {
 		return 1, nil
 	}
 
-	result, err := eng.GetTaskFinishedList(ctx, "user2", "", true, false, 1, 20)
+	result, err := eng.GetTaskFinishedList(ctx, model.TaskFinishedListParams{UserID: "user2", ProcessName: "", IgnoreStartByMe: true, Asc: false, PageNo: 1, PageSize: 20})
 	if err != nil {
 		t.Fatalf("GetTaskFinishedList 返回错误: %v", err)
 	}
@@ -353,12 +354,12 @@ func TestTaskTransfer_EmptyUsers(t *testing.T) {
 	eng := newTestEngine(repo)
 	ctx := context.Background()
 
-	err := eng.TaskTransfer(ctx, 1, nil)
+	err := eng.TaskTransfer(ctx, model.TaskTransferParams{TaskID: 1, Users: nil})
 	if err == nil {
 		t.Fatal("TaskTransfer 空 users 应返回错误")
 	}
 
-	err = eng.TaskTransfer(ctx, 1, []string{})
+	err = eng.TaskTransfer(ctx, model.TaskTransferParams{TaskID: 1, Users: []string{}})
 	if err == nil {
 		t.Fatal("TaskTransfer 空 users 切片应返回错误")
 	}
@@ -373,7 +374,7 @@ func TestTaskTransfer_AlreadyFinished(t *testing.T) {
 		return model.TaskView{TaskID: 1, IsFinished: 1}, nil
 	}
 
-	err := eng.TaskTransfer(ctx, 1, []string{"newuser"})
+	err := eng.TaskTransfer(ctx, model.TaskTransferParams{TaskID: 1, Users: []string{"newuser"}})
 	if err == nil {
 		t.Fatal("TaskTransfer 已完成任务应返回错误")
 	}
@@ -435,7 +436,7 @@ func TestGetTaskNodeStatus(t *testing.T) {
 	eng := newTestEngine(repo)
 	ctx := context.Background()
 
-	repo.GetTaskNodeStatusFunc = func(ctx context.Context, instID int, nodeID, batchCode string) (int, int, int, error) {
+	repo.GetTaskNodeStatusFunc = func(ctx context.Context, p repository.TaskNodeStatusParams) (int, int, int, error) {
 		return 3, 2, 1, nil
 	}
 

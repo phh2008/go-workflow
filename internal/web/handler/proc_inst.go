@@ -35,7 +35,12 @@ func (h *ProcInstHandler) Start(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, err.Error())
 		return
 	}
-	id, err := h.engine.InstanceStart(c.Request.Context(), req.ProcessID, req.BusinessID, req.Comment, req.VariablesJSON)
+	id, err := h.engine.InstanceStart(c.Request.Context(), model.InstanceStartParams{
+		ProcessID:     req.ProcessID,
+		BusinessID:    req.BusinessID,
+		Comment:       req.Comment,
+		VariablesJSON: req.VariablesJSON,
+	})
 	if err != nil {
 		c.JSON(http.StatusBadRequest, err.Error())
 		return
@@ -59,7 +64,11 @@ func (h *ProcInstHandler) Revoke(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, err.Error())
 		return
 	}
-	if err := h.engine.InstanceRevoke(c.Request.Context(), req.InstanceID, req.Force, req.RevokeUserID); err != nil {
+	if err := h.engine.InstanceRevoke(c.Request.Context(), model.InstanceRevokeParams{
+		InstanceID:   req.InstanceID,
+		Force:        req.Force,
+		RevokeUserID: req.RevokeUserID,
+	}); err != nil {
 		c.JSON(http.StatusBadRequest, err.Error())
 		return
 	}
@@ -105,7 +114,12 @@ func (h *ProcInstHandler) StartByUser(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, err.Error())
 		return
 	}
-	result, err := h.engine.GetInstanceStartByUser(c.Request.Context(), req.UserID, req.ProcessName, req.GetPageNo(), req.GetPageSize())
+	result, err := h.engine.GetInstanceStartByUser(c.Request.Context(), model.InstanceListByUserParams{
+		UserID:      req.UserID,
+		ProcessName: req.ProcessName,
+		PageNo:      req.GetPageNo(),
+		PageSize:    req.GetPageSize(),
+	})
 	if err != nil {
 		c.JSON(http.StatusBadRequest, err.Error())
 		return

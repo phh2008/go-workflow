@@ -112,7 +112,7 @@ func CreateExampleProcess(eng *easyworkflow.Engine) {
 	}
 
 	// 保存流程
-	id, err := eng.ProcessSave(context.Background(), j, "system")
+	id, err := eng.ProcessSave(context.Background(), model.ProcessSaveParams{Resource: j, CreateUserID: "system"})
 	if err != nil {
 		slog.Error("保存流程失败", "error", err)
 		return

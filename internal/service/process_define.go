@@ -23,18 +23,21 @@ func (e *Engine) ProcessParse(ctx context.Context, resource string) (*model.Proc
 }
 
 // ProcessSave 流程定义保存，返回流程ID。
-func (e *Engine) ProcessSave(ctx context.Context, resource string, createUserID string) (int, error) {
-	process, err := e.ProcessParse(ctx, resource)
+func (e *Engine) ProcessSave(ctx context.Context, params model.ProcessSaveParams) (int, error) {
+	process, err := e.ProcessParse(ctx, params.Resource)
 	if err != nil {
 		return 0, err
 	}
 
-	if process.ProcessName == "" || process.Source == "" || createUserID == "" {
+	if process.ProcessName == "" || process.Source == "" || params.CreateUserID == "" {
 		return 0, errors.New("流程名称、来源、创建人ID不能为空")
 	}
 
 	// 判断此工作流是否已定义
-	procID, version, err := e.repo.GetProcessIDByName(ctx, process.ProcessName, process.Source)
+	procID, version, err := e.repo.GetProcessIDByName(ctx, repository.GetProcIDByNameParams{
+		Name:   process.ProcessName,
+		Source: process.Source,
+	})
 	if err != nil {
 		return 0, err
 	}
@@ -49,7 +52,13 @@ func (e *Engine) ProcessSave(ctx context.Context, resource string, createUserID 
 			}
 			// 更新现有定义
 			newVersion := version + 1
-			if err := e.repo.UpdateProcDef(txCtx, process.ProcessName, process.Source, resource, createUserID, newVersion); err != nil {
+			if err := e.repo.UpdateProcDef(txCtx, repository.UpdateProcDefParams{
+				Name:     process.ProcessName,
+				Source:   process.Source,
+				Resource: params.Resource,
+				UserID:   params.CreateUserID,
+				Version:  newVersion,
+			}); err != nil {
 				return err
 			}
 			version = newVersion
@@ -57,8 +66,8 @@ func (e *Engine) ProcessSave(ctx context.Context, resource string, createUserID 
 			// 无老版本，直接插入
 			procDef := &entity.ProcDef{
 				Name:      process.ProcessName,
-				Resource:  resource,
-				UserID:    createUserID,
+				Resource:  params.Resource,
+				UserID:    params.CreateUserID,
 				Source:    process.Source,
 				CreatTime: entity.Now(),
 				Version:   1,

@@ -66,7 +66,7 @@ func TestResolveVariables(t *testing.T) {
 		}
 		eng := newTestEngine(repo)
 
-		m, err := eng.ResolveVariables(ctx, 1, []string{"$days", "literal"})
+		m, err := eng.ResolveVariables(ctx, model.ResolveVariablesParams{InstanceID: 1, Variables: []string{"$days", "literal"}})
 		if err != nil {
 			t.Fatalf("expected no error, got: %v", err)
 		}
@@ -86,7 +86,7 @@ func TestResolveVariables(t *testing.T) {
 		}
 		eng := newTestEngine(repo)
 
-		_, err := eng.ResolveVariables(ctx, 1, []string{"$missing"})
+		_, err := eng.ResolveVariables(ctx, model.ResolveVariablesParams{InstanceID: 1, Variables: []string{"$missing"}})
 		if err == nil {
 			t.Fatal("expected error for missing variable, got nil")
 		}

@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
-	"strconv"
 	"strings"
 
 	"github.com/Bunny3th/easy-workflow/internal/model"
@@ -64,7 +63,7 @@ func (e *Engine) gatewayNodeHandle(ctx context.Context, instID int, current *mod
 	totalFinished := 0
 	totalPrevNodes := len(current.PrevNodeIDs)
 	for _, nodeID := range current.PrevNodeIDs {
-		finished, err := e.repo.IsNodeFinished(ctx, strconv.Itoa(instID), nodeID)
+		finished, err := e.repo.IsNodeFinished(ctx, repository.IsNodeFinishedParams{InstID: instID, NodeID: nodeID})
 		if err != nil {
 			return err
 		}
@@ -91,7 +90,7 @@ func (e *Engine) gatewayNodeHandle(ctx context.Context, instID int, current *mod
 
 		// 替换表达式中的变量为值
 		expression := c.Expression
-		kv, err := e.ResolveVariables(ctx, instID, variables)
+		kv, err := e.ResolveVariables(ctx, model.ResolveVariablesParams{InstanceID: instID, Variables: variables})
 		if err != nil {
 			return err
 		}
@@ -163,7 +162,7 @@ func (e *Engine) getInstanceNode(ctx context.Context, instID int, nodeID string)
 
 // resolveNodeUsers 解析节点用户：获得用户变量并去重
 func (e *Engine) resolveNodeUsers(ctx context.Context, instID int, node model.Node) ([]string, error) {
-	kv, err := e.ResolveVariables(ctx, instID, node.UserIDs)
+	kv, err := e.ResolveVariables(ctx, model.ResolveVariablesParams{InstanceID: instID, Variables: node.UserIDs})
 	if err != nil {
 		return nil, err
 	}

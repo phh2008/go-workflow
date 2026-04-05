@@ -54,7 +54,7 @@ func NewEngine(db *gorm.DB, cfg Config) (*Engine, error) {
 	eng := &Engine{
 		db:             db,
 		logger:         log,
-		repo:           repository.NewGormRepo(db),
+		repo:           repository.NewFlowRepo(db),
 		eventPool:      make(map[string]*eventMethod),
 		ignoreEventErr: cfg.IgnoreEventError,
 		procCache:      make(map[int]map[string]model.Node),

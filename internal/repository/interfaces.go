@@ -25,11 +25,11 @@ type Repository interface {
 
 	// ---- 流程定义 ----
 
-	GetProcessIDByName(ctx context.Context, name, source string) (procID int, version int, err error)
+	GetProcessIDByName(ctx context.Context, p GetProcIDByNameParams) (procID int, version int, err error)
 	GetProcessResource(ctx context.Context, procID int) (string, error)
 	ListProcessDef(ctx context.Context, source string) ([]entity.ProcDef, error)
 	ArchiveProcDef(ctx context.Context, name, source string) error
-	UpdateProcDef(ctx context.Context, name, source string, resource, userID string, version int) error
+	UpdateProcDef(ctx context.Context, p UpdateProcDefParams) error
 	ArchiveExecutions(ctx context.Context, procID int) error
 	DeleteExecutions(ctx context.Context, procID int) error
 	SaveExecutions(ctx context.Context, executions []entity.ProcExecution) error
@@ -40,8 +40,8 @@ type Repository interface {
 	CreateInstance(ctx context.Context, inst *entity.ProcInst) error
 	UpdateInstance(ctx context.Context, id int, updates map[string]any) error
 	GetInstanceInfo(ctx context.Context, instID int) (model.InstanceView, error)
-	ListInstanceStartByUser(ctx context.Context, userID, processName string, offset, limit int) ([]model.InstanceView, error)
-	CountInstanceStartByUser(ctx context.Context, userID, processName string) (int64, error)
+	ListInstanceStartByUser(ctx context.Context, p ListInstByUserParams) ([]model.InstanceView, error)
+	CountInstanceStartByUser(ctx context.Context, p CountByUserParams) (int64, error)
 	GetProcessIDByInstID(ctx context.Context, instID int) (int, error)
 	GetProcessNameByInstID(ctx context.Context, instID int) (string, error)
 
@@ -50,13 +50,13 @@ type Repository interface {
 	CreateTasks(ctx context.Context, tasks []entity.ProcTask) error
 	UpdateTask(ctx context.Context, id int, updates map[string]any) error
 	GetTaskInfo(ctx context.Context, taskID int) (model.TaskView, error)
-	ListTaskToDo(ctx context.Context, userID, processName string, asc bool, offset, limit int) ([]model.TaskView, error)
-	CountTaskToDo(ctx context.Context, userID, processName string) (int64, error)
-	ListTaskFinished(ctx context.Context, userID, processName string, ignoreStartByMe, asc bool, offset, limit int) ([]model.TaskView, error)
-	CountTaskFinished(ctx context.Context, userID, processName string, ignoreStartByMe bool) (int64, error)
+	ListTaskToDo(ctx context.Context, p ListToDoParams) ([]model.TaskView, error)
+	CountTaskToDo(ctx context.Context, p CountByUserParams) (int64, error)
+	ListTaskFinished(ctx context.Context, p ListFinishedParams) ([]model.TaskView, error)
+	CountTaskFinished(ctx context.Context, p CountFinishedParams) (int64, error)
 	ListInstanceTaskHistory(ctx context.Context, instID int) ([]model.TaskView, error)
-	GetTaskNodeStatus(ctx context.Context, instID int, nodeID, batchCode string) (total, passed, rejected int, err error)
-	GetNotFinishUsers(ctx context.Context, instID int, nodeID string) ([]string, error)
+	GetTaskNodeStatus(ctx context.Context, p TaskNodeStatusParams) (total, passed, rejected int, err error)
+	GetNotFinishUsers(ctx context.Context, p NotFinishUsersParams) ([]string, error)
 	GetPrevNodeBatchCode(ctx context.Context, taskID int) (string, error)
 	HasRejectInBatch(ctx context.Context, batchCode string) (bool, error)
 	UpdateTasksByBatchCode(ctx context.Context, batchCode string, updates map[string]any) error
@@ -69,7 +69,7 @@ type Repository interface {
 	// ---- 执行关系 ----
 
 	GetStartNodeID(ctx context.Context, procID int) (string, error)
-	IsNodeFinished(ctx context.Context, instID, nodeID string) (bool, error)
+	IsNodeFinished(ctx context.Context, p IsNodeFinishedParams) (bool, error)
 
 	// ---- 变量 ----
 

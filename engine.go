@@ -10,7 +10,6 @@ import (
 	"github.com/Bunny3th/easy-workflow/internal/web"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
-	"time"
 )
 
 // Engine 工作流引擎，提供流程定义、实例管理和任务处理等功能。
@@ -54,8 +53,8 @@ func (e *Engine) DB() *gorm.DB {
 }
 
 // ResolveVariables 解析流程实例变量。
-func (e *Engine) ResolveVariables(ctx context.Context, instID int, variables []string) (map[string]string, error) {
-	return e.internal.ResolveVariables(ctx, instID, variables)
+func (e *Engine) ResolveVariables(ctx context.Context, params model.ResolveVariablesParams) (map[string]string, error) {
+	return e.internal.ResolveVariables(ctx, params)
 }
 
 // --- 流程定义 ---
@@ -66,8 +65,8 @@ func (e *Engine) ProcessParse(ctx context.Context, resource string) (*model.Proc
 }
 
 // ProcessSave 保存流程定义，返回流程ID。
-func (e *Engine) ProcessSave(ctx context.Context, resource string, createUserID string) (int, error) {
-	return e.internal.ProcessSave(ctx, resource, createUserID)
+func (e *Engine) ProcessSave(ctx context.Context, params model.ProcessSaveParams) (int, error) {
+	return e.internal.ProcessSave(ctx, params)
 }
 
 // GetProcessDefine 获取流程定义。
@@ -83,13 +82,13 @@ func (e *Engine) GetProcessList(ctx context.Context, source string) ([]entity.Pr
 // --- 流程实例 ---
 
 // InstanceStart 启动流程实例，返回实例ID。
-func (e *Engine) InstanceStart(ctx context.Context, procID int, businessID, comment, variablesJSON string) (int, error) {
-	return e.internal.InstanceStart(ctx, procID, businessID, comment, variablesJSON)
+func (e *Engine) InstanceStart(ctx context.Context, params model.InstanceStartParams) (int, error) {
+	return e.internal.InstanceStart(ctx, params)
 }
 
 // InstanceRevoke 撤销流程实例。
-func (e *Engine) InstanceRevoke(ctx context.Context, instID int, force bool, revokeUserID string) error {
-	return e.internal.InstanceRevoke(ctx, instID, force, revokeUserID)
+func (e *Engine) InstanceRevoke(ctx context.Context, params model.InstanceRevokeParams) error {
+	return e.internal.InstanceRevoke(ctx, params)
 }
 
 // GetInstanceInfo 获取流程实例信息。
@@ -98,30 +97,30 @@ func (e *Engine) GetInstanceInfo(ctx context.Context, instID int) (model.Instanc
 }
 
 // GetInstanceStartByUser 获取用户发起的流程实例列表（含分页和总数）。
-func (e *Engine) GetInstanceStartByUser(ctx context.Context, userID, processName string, pageNo, pageSize int) (*model.PageData[model.InstanceView], error) {
-	return e.internal.GetInstanceStartByUser(ctx, userID, processName, pageNo, pageSize)
+func (e *Engine) GetInstanceStartByUser(ctx context.Context, params model.InstanceListByUserParams) (*model.PageData[model.InstanceView], error) {
+	return e.internal.GetInstanceStartByUser(ctx, params)
 }
 
 // --- 任务 ---
 
 // TaskPass 任务通过。
-func (e *Engine) TaskPass(ctx context.Context, taskID int, comment, varJSON string, directlyToRejected bool) error {
-	return e.internal.TaskPass(ctx, taskID, comment, varJSON, directlyToRejected)
+func (e *Engine) TaskPass(ctx context.Context, params model.TaskPassParams) error {
+	return e.internal.TaskPass(ctx, params)
 }
 
 // TaskReject 任务驳回。
-func (e *Engine) TaskReject(ctx context.Context, taskID int, comment, varJSON string) error {
-	return e.internal.TaskReject(ctx, taskID, comment, varJSON)
+func (e *Engine) TaskReject(ctx context.Context, params model.TaskRejectParams) error {
+	return e.internal.TaskReject(ctx, params)
 }
 
 // TaskTransfer 任务转交。
-func (e *Engine) TaskTransfer(ctx context.Context, taskID int, users []string) error {
-	return e.internal.TaskTransfer(ctx, taskID, users)
+func (e *Engine) TaskTransfer(ctx context.Context, params model.TaskTransferParams) error {
+	return e.internal.TaskTransfer(ctx, params)
 }
 
 // TaskFreeReject 自由驳回（驳回到上游指定节点）。
-func (e *Engine) TaskFreeReject(ctx context.Context, taskID int, nodeID, comment, varJSON string) error {
-	return e.internal.TaskFreeReject(ctx, taskID, nodeID, comment, varJSON)
+func (e *Engine) TaskFreeReject(ctx context.Context, params model.TaskFreeRejectParams) error {
+	return e.internal.TaskFreeReject(ctx, params)
 }
 
 // GetTaskInfo 获取任务信息。
@@ -130,13 +129,13 @@ func (e *Engine) GetTaskInfo(ctx context.Context, taskID int) (model.TaskView, e
 }
 
 // GetTaskToDoList 获取待办任务列表（含分页和总数）。
-func (e *Engine) GetTaskToDoList(ctx context.Context, userID, processName string, asc bool, pageNo, pageSize int) (*model.PageData[model.TaskView], error) {
-	return e.internal.GetTaskToDoList(ctx, userID, processName, asc, pageNo, pageSize)
+func (e *Engine) GetTaskToDoList(ctx context.Context, params model.TaskToDoListParams) (*model.PageData[model.TaskView], error) {
+	return e.internal.GetTaskToDoList(ctx, params)
 }
 
 // GetTaskFinishedList 获取已办任务列表（含分页和总数）。
-func (e *Engine) GetTaskFinishedList(ctx context.Context, userID, processName string, ignoreStartByMe, asc bool, pageNo, pageSize int) (*model.PageData[model.TaskView], error) {
-	return e.internal.GetTaskFinishedList(ctx, userID, processName, ignoreStartByMe, asc, pageNo, pageSize)
+func (e *Engine) GetTaskFinishedList(ctx context.Context, params model.TaskFinishedListParams) (*model.PageData[model.TaskView], error) {
+	return e.internal.GetTaskFinishedList(ctx, params)
 }
 
 // TaskUpstreamNodeList 获取任务上游节点列表。
@@ -157,8 +156,8 @@ func (e *Engine) WhatCanIDo(ctx context.Context, taskID int) (model.TaskAction, 
 // --- 计划任务 ---
 
 // ScheduleTask 注册定时任务。
-func (e *Engine) ScheduleTask(ctx context.Context, name string, startAt, stopAt time.Time, intervalSec int64, fn func() error) error {
-	return e.internal.ScheduleTask(ctx, name, startAt, stopAt, intervalSec, fn)
+func (e *Engine) ScheduleTask(ctx context.Context, params model.ScheduleTaskParams) error {
+	return e.internal.ScheduleTask(ctx, params)
 }
 
 // GetScheduledTaskList 获取已注册的定时任务列表。

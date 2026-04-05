@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/Bunny3th/easy-workflow/internal/model"
+	"github.com/Bunny3th/easy-workflow/internal/repository"
 )
 
 // ---- GetInstanceInfo ----
@@ -75,20 +76,20 @@ func TestGetInstanceStartByUser(t *testing.T) {
 		{ProcInstID: 1, ProcName: "请假流程", Starter: "user1"},
 		{ProcInstID: 2, ProcName: "报销流程", Starter: "user1"},
 	}
-	repo.ListInstanceStartByUserFunc = func(ctx context.Context, userID, processName string, offset, limit int) ([]model.InstanceView, error) {
-		if userID != "user1" {
-			t.Errorf("userID = %q, 期望 %q", userID, "user1")
+	repo.ListInstanceStartByUserFunc = func(ctx context.Context, p repository.ListInstByUserParams) ([]model.InstanceView, error) {
+		if p.UserID != "user1" {
+			t.Errorf("userID = %q, 期望 %q", p.UserID, "user1")
 		}
-		if offset != 0 || limit != 10 {
-			t.Errorf("offset=%d limit=%d, 期望 offset=0 limit=10", offset, limit)
+		if p.Offset != 0 || p.Limit != 10 {
+			t.Errorf("offset=%d limit=%d, 期望 offset=0 limit=10", p.Offset, p.Limit)
 		}
 		return expected, nil
 	}
-	repo.CountInstanceStartByUserFunc = func(ctx context.Context, userID, processName string) (int64, error) {
+	repo.CountInstanceStartByUserFunc = func(ctx context.Context, p repository.CountByUserParams) (int64, error) {
 		return 2, nil
 	}
 
-	result, err := eng.GetInstanceStartByUser(ctx, "user1", "", 1, 10)
+	result, err := eng.GetInstanceStartByUser(ctx, model.InstanceListByUserParams{UserID: "user1", ProcessName: "", PageNo: 1, PageSize: 10})
 	if err != nil {
 		t.Fatalf("GetInstanceStartByUser 返回错误: %v", err)
 	}
@@ -105,17 +106,17 @@ func TestGetInstanceStartByUser_WithProcessName(t *testing.T) {
 	eng := newTestEngine(repo)
 	ctx := context.Background()
 
-	repo.ListInstanceStartByUserFunc = func(ctx context.Context, userID, processName string, offset, limit int) ([]model.InstanceView, error) {
-		if processName != "请假流程" {
-			t.Errorf("processName = %q, 期望 %q", processName, "请假流程")
+	repo.ListInstanceStartByUserFunc = func(ctx context.Context, p repository.ListInstByUserParams) ([]model.InstanceView, error) {
+		if p.ProcessName != "请假流程" {
+			t.Errorf("processName = %q, 期望 %q", p.ProcessName, "请假流程")
 		}
 		return []model.InstanceView{{ProcInstID: 1}}, nil
 	}
-	repo.CountInstanceStartByUserFunc = func(ctx context.Context, userID, processName string) (int64, error) {
+	repo.CountInstanceStartByUserFunc = func(ctx context.Context, p repository.CountByUserParams) (int64, error) {
 		return 1, nil
 	}
 
-	result, err := eng.GetInstanceStartByUser(ctx, "user1", "请假流程", 1, 10)
+	result, err := eng.GetInstanceStartByUser(ctx, model.InstanceListByUserParams{UserID: "user1", ProcessName: "请假流程", PageNo: 1, PageSize: 10})
 	if err != nil {
 		t.Fatalf("GetInstanceStartByUser 返回错误: %v", err)
 	}
@@ -139,7 +140,7 @@ func TestInstanceRevoke_Force_RepoError(t *testing.T) {
 		return 0, errors.New("流程实例不存在")
 	}
 
-	err := eng.InstanceRevoke(ctx, 1, true, "user1")
+	err := eng.InstanceRevoke(ctx, model.InstanceRevokeParams{InstanceID: 1, Force: true, RevokeUserID: "user1"})
 	if err == nil {
 		t.Fatal("InstanceRevoke GetProcessIDByInstID 返回错误时应传播")
 	}

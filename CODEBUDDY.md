@@ -6,7 +6,7 @@ This file provides guidance to CodeBuddy Code when working with code in this rep
 
 easy-workflow 是一个纯 Go 语言开发的简单工作流引擎，支持作为库集成到 Go 项目中，也可独立作为 Web API Server 运行。专为"中国式流程"设计，支持会签、混合网关、自由驳回、直接跳转等特性。
 
-**技术栈**: Go 1.21+、MySQL 8.0+（CTE）、GORM、Gin（Web API）、expr-lang/expr（表达式求值）、slog（日志）
+**技术栈**: Go 1.26、MySQL 8.0+（CTE）、GORM、Gin（Web API）、expr-lang/expr（表达式求值）、swaggo/swag（Swagger 文档）、slog（日志）
 
 ## Build & Run
 
@@ -24,7 +24,7 @@ go test ./...
 go test ./internal/service/...
 ```
 
-**注意**: Service 层有单元测试（`internal/service/*_test.go`，68 个用例）。
+**注意**: Service 层有单元测试（`internal/service/*_test.go`，65 个用例），使用 `mock_repo.go` 作为 Repository mock。
 
 ## Architecture
 
@@ -66,6 +66,7 @@ easy-workflow/
 │   │   ├── variable.go                # 变量系统
 │   │   ├── expression.go              # 表达式求值（expr-lang/expr）
 │   │   └── scheduler.go               # 计划任务
+│   │   └── mock_repo.go                # Repository mock（测试用）
 │   ├── pkg/                           # 内部工具
 │   │   ├── helper.go                  # JSON、去重等通用函数
 │   │   └── reflect.go                 # 反射工具
@@ -80,7 +81,11 @@ easy-workflow/
     ├── main.go
     ├── event/example_event.go
     ├── process/example_process.go
-    └── schedule/example_schedule.go
+    ├── schedule/example_schedule.go
+    └── docs/                            # Swagger 文档（自动生成）
+        ├── docs.go
+        ├── swagger.json
+        └── swagger.yaml
 ```
 
 ### 层间依赖关系
@@ -129,8 +134,10 @@ err = eng.TaskPass(ctx, taskID, comment, variablesJSON, false)
 
 // 可选：启动 Web API
 eng.StartWebAPI(ginEngine, easyworkflow.WebConfig{
-    BaseURL: "/process",
-    Addr:    ":8080",
+    BaseURL:      "/process",
+    ShowSwagger:  true,
+    SwaggerURL:   "/swagger/*any",
+    Addr:         ":8080",
 })
 ```
 
@@ -199,6 +206,32 @@ Web handler 使用 `c.ShouldBind(&req)` 绑定请求参数，参数定义在 `in
 - GateWayNode → `gatewayNodeHandle()` 条件判断+分支
 - TaskNode → `taskNodeHandle()` 生成任务
 - EndNode → `endNodeHandle()` 数据归档
+
+### 公共 API (`engine.go`)
+
+除了示例中展示的 `New`、`RegisterEvents`、`InstanceStart`、`TaskPass`、`StartWebAPI` 外，`Engine` 还导出以下主要方法：
+
+| 方法 | 说明 |
+|------|------|
+| `InstanceRevoke(ctx, instID, userID, comment)` | 撤销流程实例 |
+| `TaskReject(ctx, taskID, comment, variables, isDirectly)` | 任务驳回 |
+| `TaskFreeReject(ctx, taskID, comment, variables, targetNodeID)` | 自由驳回 |
+| `TaskTransfer(ctx, taskID, comment, variables, toUserIDs)` | 任务转交 |
+| `GetTaskInfo(ctx, taskID)` | 获取任务信息 |
+| `GetTaskToDoList(ctx, userID, processName, asc, pageNo, pageSize)` | 待办任务列表（分页） |
+| `GetTaskFinishedList(ctx, userID, processName, ignoreStartByMe, asc, pageNo, pageSize)` | 已办任务列表（分页） |
+| `WhatCanIDo(ctx, taskID)` | 当前任务可执行操作 |
+| `TaskUpstreamNodeList(ctx, taskID)` | 上游节点列表 |
+| `GetInstanceTaskHistory(ctx, instID)` | 实例任务历史 |
+| `GetInstanceInfo(ctx, instID)` | 获取实例信息 |
+| `GetInstanceStartByUser(ctx, userID, processName, pageNo, pageSize)` | 用户发起的实例列表（分页） |
+| `GetProcessDefine(ctx, procID)` | 获取流程定义 |
+| `GetProcessList(ctx, source)` | 获取流程定义列表 |
+| `ProcessSave(ctx, resource, createUserID)` | 保存流程定义 |
+| `ProcessParse(ctx, resource)` | 解析流程定义 JSON |
+| `ResolveVariables(ctx, instID, variables)` | 解析流程变量 |
+| `ScheduleTask(ctx, name, startAt, stopAt, intervalSec, fn)` | 注册定时任务 |
+| `DB()` | 返回底层 GORM DB 实例 |
 
 ### 引擎初始化 (`easyworkflow.New`)
 
@@ -275,6 +308,8 @@ Web handler 使用 `c.ShouldBind(&req)` 绑定请求参数，参数定义在 `in
 - `/task/*` — 任务操作
 
 Handler 通过 struct 持有 `*service.Engine` 引用，使用 `c.ShouldBind(&req)` 绑定请求参数到 `model/request.go` 中定义的结构体。
+
+当 `WebConfig.ShowSwagger=true` 时，自动注册 Swagger 文档路由（文档生成自 `example/docs/`，需提前用 `swag init` 生成）。
 
 ### 流程定义缓存
 

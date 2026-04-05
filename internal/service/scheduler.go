@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"maps"
 	"time"
+
+	"github.com/Bunny3th/easy-workflow/internal/model"
 )
 
 // SchedulerTask 被计划的任务。
@@ -21,44 +23,37 @@ type SchedulerTask struct {
 
 // ScheduleTask 登记计划任务，任务会被添加进计划任务池，并进入运行状态。
 // 注意：请使用 go 关键字运行此函数，因为任务运行周期可能很长。
-// 参数说明：
-//   - ctx: 上下文
-//   - name: 任务名称
-//   - startAt: 任务开始时间
-//   - stopAt: 任务结束时间
-//   - intervalSec: 重复执行间隔（秒），最小1秒
-//   - fn: 需要执行的方法，签名必须是 func() error
-func (e *Engine) ScheduleTask(ctx context.Context, name string, startAt, stopAt time.Time, intervalSec int64, fn func() error) error {
+func (e *Engine) ScheduleTask(ctx context.Context, params model.ScheduleTaskParams) error {
 	_ = ctx
 	e.scheduledTasksMu.Lock()
 	defer e.scheduledTasksMu.Unlock()
 
-	if _, ok := e.scheduledTasks[name]; ok {
+	if _, ok := e.scheduledTasks[params.Name]; ok {
 		return errors.New("此任务已被加入任务池，无需重复操作")
 	}
 
 	now := time.Now()
 
-	if now.After(stopAt) {
+	if now.After(params.StopAt) {
 		return errors.New("任务结束时间小于当前时间，任务不会被运行")
 	}
 
-	if intervalSec < 1 {
+	if params.IntervalSec < 1 {
 		return errors.New("重复执行间隔最小1秒")
 	}
 
-	if stopAt.Before(startAt) {
+	if params.StopAt.Before(params.StartAt) {
 		return errors.New("开始时间应小于结束时间")
 	}
 
-	e.scheduledTasks[name] = &SchedulerTask{
-		StartAt:        startAt,
-		StopAt:         stopAt,
-		IntervalSecond: intervalSec,
-		Func:           fn,
+	e.scheduledTasks[params.Name] = &SchedulerTask{
+		StartAt:        params.StartAt,
+		StopAt:         params.StopAt,
+		IntervalSecond: params.IntervalSec,
+		Func:           params.Func,
 	}
 
-	go e.runScheduledTask(name)
+	go e.runScheduledTask(params.Name)
 
 	return nil
 }
