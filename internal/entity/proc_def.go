@@ -16,6 +16,10 @@ type ProcDef struct {
 	CreatTime LocalTime `gorm:"column:create_time;type:DATETIME DEFAULT NOW();default:NOW();comment:创建时间"`
 }
 
+func (ProcDef) TableName() string {
+	return "proc_def"
+}
+
 // HistProcDef 流程定义历史表，流程结束时数据归档到此表。
 type HistProcDef struct {
 	CommonID
@@ -26,4 +30,8 @@ type HistProcDef struct {
 	UserID    string    `gorm:"column:user_id;type:VARCHAR(250) NOT NULL;comment:创建者ID"`
 	Source    string    `gorm:"column:source;type:VARCHAR(250) NOT NULL;comment:来源(引擎可能被多个系统、组件等使用，这里记下从哪个来源创建的流程);"`
 	CreatTime LocalTime `gorm:"column:create_time;type:DATETIME DEFAULT NOW();default:NOW();comment:创建时间"`
+}
+
+func (HistProcDef) TableName() string {
+	return "hist_proc_def"
 }

@@ -21,6 +21,10 @@ type ProcTask struct {
 	FinishedTime       LocalTime `gorm:"index:ix_finished_time;column:finished_time;type:DATETIME DEFAULT NULL;default:NULL;comment:处理任务时间"`
 }
 
+func (ProcTask) TableName() string {
+	return "proc_task"
+}
+
 // HistProcTask 任务历史表，流程结束时数据归档到此表。
 type HistProcTask struct {
 	CommonID
@@ -41,4 +45,8 @@ type HistProcTask struct {
 	ProcInstCreateTime LocalTime `gorm:"column:proc_inst_create_time;type:DATETIME NOT NULL;comment:流程实例创建时间,冗余字段,偷懒用"`
 	CreateTime         LocalTime `gorm:"column:create_time;type:DATETIME DEFAULT NOW();default:NOW();comment:系统创建任务时间"`
 	FinishedTime       LocalTime `gorm:"index:ix_finished_time;column:finished_time;type:DATETIME DEFAULT NULL;default:NULL;comment:处理任务时间"`
+}
+
+func (HistProcTask) TableName() string {
+	return "hist_proc_task"
 }

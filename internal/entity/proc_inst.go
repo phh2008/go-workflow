@@ -12,6 +12,10 @@ type ProcInst struct {
 	Status        int       `gorm:"column:status;type:TINYINT DEFAULT 0 ;default 0;comment:0:未完成(审批中) 1:已完成(通过) 2:撤销"`
 }
 
+func (ProcInst) TableName() string {
+	return "proc_inst"
+}
+
 // HistProcInst 流程实例历史表，流程结束时数据归档到此表。
 type HistProcInst struct {
 	CommonID
@@ -23,4 +27,8 @@ type HistProcInst struct {
 	CurrentNodeID string    `gorm:"column:current_node_id;type:VARCHAR(250) NOT NULL;comment:当前进行节点ID"`
 	CreateTime    LocalTime `gorm:"column:create_time;type:DATETIME DEFAULT NOW();default:NOW();comment:创建时间"`
 	Status        int       `gorm:"column:status;type:TINYINT DEFAULT 0 ;default 0;comment:0:未完成(审批中) 1:已完成(通过) 2:撤销"`
+}
+
+func (HistProcInst) TableName() string {
+	return "hist_proc_inst"
 }
