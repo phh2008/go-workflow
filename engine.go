@@ -153,18 +153,6 @@ func (e *Engine) WhatCanIDo(ctx context.Context, taskID int) (model.TaskAction, 
 	return e.internal.WhatCanIDo(ctx, taskID)
 }
 
-// --- 计划任务 ---
-
-// ScheduleTask 注册定时任务。
-func (e *Engine) ScheduleTask(ctx context.Context, params model.ScheduleTaskParams) error {
-	return e.internal.ScheduleTask(ctx, params)
-}
-
-// GetScheduledTaskList 获取已注册的定时任务列表。
-func (e *Engine) GetScheduledTaskList(ctx context.Context) map[string]*service.SchedulerTask {
-	return e.internal.GetScheduledTaskList(ctx)
-}
-
 // --- Web API ---
 
 // WebConfig Web API 配置。

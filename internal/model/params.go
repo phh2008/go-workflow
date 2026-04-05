@@ -1,7 +1,5 @@
 package model
 
-import "time"
-
 // InstanceStartParams 启动流程实例参数。
 type InstanceStartParams struct {
 	ProcessID     int    // 流程ID
@@ -83,13 +81,4 @@ type ProcessSaveParams struct {
 type ResolveVariablesParams struct {
 	InstanceID int      // 流程实例ID
 	Variables  []string // 变量名列表
-}
-
-// ScheduleTaskParams 注册定时任务参数。
-type ScheduleTaskParams struct {
-	Name        string       // 任务名称
-	StartAt     time.Time    // 开始时间
-	StopAt      time.Time    // 结束时间
-	IntervalSec int64        // 执行间隔（秒）
-	Func        func() error // 执行函数
 }

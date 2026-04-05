@@ -21,7 +21,6 @@ func newTestEngine(repo repository.Repository) *Engine {
 		eventPool:      make(map[string]*eventMethod),
 		ignoreEventErr: false,
 		procCache:      make(map[int]map[string]model.Node),
-		scheduledTasks: make(map[string]*SchedulerTask),
 		expressionEval: NewExpressionEvaluator(),
 	}
 }

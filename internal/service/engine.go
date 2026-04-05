@@ -33,8 +33,6 @@ type Engine struct {
 	ignoreEventErr   bool
 	procCache        map[int]map[string]model.Node
 	procCacheMu      sync.RWMutex
-	scheduledTasks   map[string]*SchedulerTask
-	scheduledTasksMu sync.RWMutex
 	expressionEval   *ExpressionEvaluator
 }
 
@@ -58,7 +56,6 @@ func NewEngine(db *gorm.DB, cfg Config) (*Engine, error) {
 		eventPool:      make(map[string]*eventMethod),
 		ignoreEventErr: cfg.IgnoreEventError,
 		procCache:      make(map[int]map[string]model.Node),
-		scheduledTasks: make(map[string]*SchedulerTask),
 		expressionEval: NewExpressionEvaluator(),
 	}
 

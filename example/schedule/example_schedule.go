@@ -2,21 +2,22 @@ package schedule
 
 import (
 	"context"
+	"log/slog"
 
 	"github.com/Bunny3th/easy-workflow"
 	"github.com/Bunny3th/easy-workflow/internal/model"
 )
 
-// AutoFinishTask 定义一个任务计划：对于UserID为"-1"的任务做自动通过。
-// 返回一个 func() error 闭包，用于传入 eng.ScheduleTask()。
-func AutoFinishTask(eng *easyworkflow.Engine) func() error {
-	return func() error {
+// AutoFinishTask 对于 UserID 为 "-1" 的任务做自动通过（免审节点）。
+func AutoFinishTask(eng *easyworkflow.Engine) func() {
+	return func() {
 		ctx := context.Background()
 		// 首先获取所有用户ID为"-1"，且还未完成的任务
 		var tasks []model.TaskView
 		err := eng.DB().WithContext(ctx).Raw("SELECT * FROM proc_task WHERE user_id='-1' AND is_finished=0").Scan(&tasks).Error
 		if err != nil {
-			return err
+			slog.Error("自动完成任务查询失败", "error", err)
+			return
 		}
 
 		for _, task := range tasks {
@@ -29,7 +30,8 @@ func AutoFinishTask(eng *easyworkflow.Engine) func() error {
 				"SELECT prev_node_id AS node_id FROM proc_execution WHERE proc_id=? AND node_id=?",
 				task.ProcID, task.NodeID).Scan(&PrevNodes).Error
 			if err != nil {
-				return err
+				slog.Error("自动完成任务查询前置节点失败", "error", err, "taskID", task.TaskID)
+				return
 			}
 			for _, n := range PrevNodes {
 				PrevNodeIDs[n.NodeID] = nil
@@ -41,9 +43,9 @@ func AutoFinishTask(eng *easyworkflow.Engine) func() error {
 				err = eng.TaskReject(ctx, model.TaskRejectParams{TaskID: task.TaskID, Comment: "免审自动驳回"})
 			}
 			if err != nil {
-				return err
+				slog.Error("自动完成任务处理失败", "error", err, "taskID", task.TaskID)
+				return
 			}
 		}
-		return nil
 	}
 }

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"log/slog"
 	"time"
 
@@ -9,8 +8,8 @@ import (
 	"github.com/Bunny3th/easy-workflow/example/event"
 	"github.com/Bunny3th/easy-workflow/example/process"
 	"github.com/Bunny3th/easy-workflow/example/schedule"
-	"github.com/Bunny3th/easy-workflow/internal/model"
 	"github.com/gin-gonic/gin"
+	"github.com/go-co-op/gocron/v2"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	gormlogger "gorm.io/gorm/logger"
@@ -41,16 +40,22 @@ func main() {
 	//----------------------------生成一个示例流程----------------------------
 	process.CreateExampleProcess(eng)
 
-	// 开启工作流计划任务：每10秒钟执行一次自动完成任务(免审)
-	start, _ := time.ParseInLocation("2006-01-02 15:04:05", "2023-10-27 00:00:00", time.Local)
-	end, _ := time.ParseInLocation("2006-01-02 15:04:05", "2199-10-27 00:00:00", time.Local)
-	go eng.ScheduleTask(context.Background(), model.ScheduleTaskParams{
-		Name:        "自动完成任务",
-		StartAt:     start,
-		StopAt:      end,
-		IntervalSec: 10,
-		Func:        schedule.AutoFinishTask(eng),
-	})
+	//----------------------------注册定时任务----------------------------
+	s, err := gocron.NewScheduler()
+	if err != nil {
+		slog.Error("创建调度器失败", "error", err)
+		return
+	}
+	// 每10秒钟执行一次自动完成任务(免审)
+	_, err = s.NewJob(
+		gocron.DurationJob(10*time.Second),
+		gocron.NewTask(schedule.AutoFinishTask(eng)),
+	)
+	if err != nil {
+		slog.Error("注册定时任务失败", "error", err)
+		return
+	}
+	s.Start()
 
 	//----------------------------开启web api----------------------------
 	// 这里需要注意：如果你的业务系统也同时使用了swagger
