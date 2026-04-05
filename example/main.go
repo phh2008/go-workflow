@@ -19,7 +19,7 @@ import (
 
 func main() {
 	//----------------------------创建数据库连接----------------------------
-	db, err := gorm.Open(mysql.Open("goeasy:sNd%sLDjd*12@tcp(172.16.18.18:3306)/easy_workflow?charset=utf8mb4&parseTime=True&loc=Local"), &gorm.Config{
+	db, err := gorm.Open(mysql.Open("root:root@tcp(127.0.0.1:3306)/easy_workflow_v2?charset=utf8mb4&parseTime=True&loc=Local"), &gorm.Config{
 		NamingStrategy: schema.NamingStrategy{SingularTable: true},
 		Logger:         gormlogger.Default.LogMode(gormlogger.Info),
 	})
