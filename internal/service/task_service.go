@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 
 	"github.com/Bunny3th/easy-workflow/internal/entity"
 	"github.com/Bunny3th/easy-workflow/internal/model"
@@ -329,6 +330,8 @@ func (e *Engine) processTask(ctx context.Context, taskID int, comment, varJSON s
 		return err
 	}
 
+	slog.Debug("[processTask] 开始处理任务", "taskID", taskID, "instID", taskInfo.ProcInstID, "nodeID", taskInfo.NodeID, "nodeName", taskInfo.NodeName, "userID", taskInfo.UserID, "isFinished", taskInfo.IsFinished, "status", option.status)
+
 	if taskInfo.IsFinished == 1 {
 		return fmt.Errorf("节点ID%d已处理，无需操作", taskID)
 	}
@@ -359,6 +362,10 @@ func (e *Engine) processTask(ctx context.Context, taskID int, comment, varJSON s
 		return err
 	}
 
+	// 同步更新 taskInfo 状态，因为 taskSubmit 更新了数据库但 taskInfo 是值拷贝
+	taskInfo.Status = option.status
+	taskInfo.IsFinished = 1
+
 	// 当前 task 上一个节点
 	var prevNode model.Node
 	if taskInfo.PrevNodeID == "" {
@@ -388,12 +395,16 @@ func (e *Engine) processTask(ctx context.Context, taskID int, comment, varJSON s
 	} else {
 		nextNode, err = e.taskNextNode(ctx, taskInfo)
 		if err != nil {
+			slog.Debug("[processTask] taskNextNode 失败", "error", err)
 			e.taskRevoke(ctx, taskID)
 			return err
 		}
 	}
 
+	slog.Debug("[processTask] 下一个节点", "taskID", taskID, "nextNodeID", nextNode.NodeID, "nextNodeName", nextNode.NodeName, "nextNodeType", nextNode.NodeType)
+
 	if nextNode.NodeID == "" {
+		slog.Debug("[processTask] 无下一节点，流程在此终止", "taskID", taskID)
 		return nil
 	}
 
@@ -405,6 +416,7 @@ func (e *Engine) processTask(ctx context.Context, taskID int, comment, varJSON s
 
 	// 开始处理下一个节点
 	if err := e.processNode(ctx, taskInfo.ProcInstID, &nextNode, currentNode); err != nil {
+		slog.Debug("[processTask] processNode 失败", "nextNodeID", nextNode.NodeID, "error", err)
 		e.taskRevoke(ctx, taskID)
 		return err
 	}
@@ -489,15 +501,20 @@ func (e *Engine) taskNextNode(ctx context.Context, taskInfo model.TaskView) (mod
 		return model.Node{}, err
 	}
 
+	slog.Debug("[taskNextNode] 获取下一节点", "taskID", taskInfo.TaskID, "nodeID", taskInfo.NodeID, "status", taskInfo.Status, "isCosigned", taskInfo.IsCosigned, "totalTask", totalTask, "totalPassed", totalPassed)
+
 	if taskInfo.Status == 1 {
 		// 通过的情况
 		if taskInfo.IsCosigned == 0 || (taskInfo.IsCosigned == 1 && totalTask == totalPassed) {
 			nextNodeID, err := e.repo.GetNextNodeIDByPrevNodeID(ctx, taskInfo.NodeID)
 			if err != nil {
+				slog.Debug("[taskNextNode] GetNextNodeIDByPrevNodeID 失败", "prevNodeID", taskInfo.NodeID, "error", err)
 				return model.Node{}, err
 			}
+			slog.Debug("[taskNextNode] 查到下一节点", "prevNodeID", taskInfo.NodeID, "nextNodeID", nextNodeID)
 			return e.getInstanceNode(ctx, taskInfo.ProcInstID, nextNodeID)
 		}
+		slog.Debug("[taskNextNode] 会签节点未全部通过，无下一节点", "taskID", taskInfo.TaskID)
 		return model.Node{}, nil
 	}
 
