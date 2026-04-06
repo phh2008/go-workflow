@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"regexp"
 	"strings"
 
@@ -15,6 +16,8 @@ import (
 
 // processNode 处理节点，如：生成task、进行条件判断、处理结束节点等。
 func (e *Engine) processNode(ctx context.Context, instID int, current *model.Node, prev model.Node) error {
+	slog.Debug("[processNode] 开始处理节点", "instID", instID, "nodeID", current.NodeID, "nodeName", current.NodeName, "nodeType", current.NodeType)
+
 	// 处理节点开始事件
 	if err := e.runNodeEvents(ctx, current.NodeStartEvents, instID, current, prev); err != nil {
 		return err
@@ -67,18 +70,22 @@ func (e *Engine) gatewayNodeHandle(ctx context.Context, instID int, current *mod
 		if err != nil {
 			return err
 		}
+		slog.Debug("[gatewayNodeHandle] 检查上级节点完成情况", "instID", instID, "nodeID", current.NodeID, "prevNodeID", nodeID, "finished", finished)
 		if finished {
 			totalFinished++
 		}
 	}
+	slog.Debug("[gatewayNodeHandle] 上级节点统计", "instID", instID, "nodeID", current.NodeID, "totalPrevNodes", totalPrevNodes, "totalFinished", totalFinished, "waitForAll", current.GWConfig.WaitForAllPrevNode)
 
 	// 并行网关模式：还有尚未完成的上级节点，则退出
 	if current.GWConfig.WaitForAllPrevNode == 1 && totalPrevNodes != totalFinished {
+		slog.Debug("[gatewayNodeHandle] 并行网关，上级节点未全部完成，退出", "instID", instID, "nodeID", current.NodeID)
 		return nil
 	}
 
 	// 包含网关模式：连一个已完成的上级节点都没有，则退出
 	if current.GWConfig.WaitForAllPrevNode == 0 && totalFinished < 1 {
+		slog.Debug("[gatewayNodeHandle] 包含网关，无上级节点完成，退出", "instID", instID, "nodeID", current.NodeID)
 		return nil
 	}
 
@@ -101,8 +108,10 @@ func (e *Engine) gatewayNodeHandle(ctx context.Context, instID int, current *mod
 		// 使用表达式求值器计算表达式
 		ok, err := e.expressionEval.EvalWithRawEnv(expression, kv)
 		if err != nil {
+			slog.Debug("[gatewayNodeHandle] 表达式求值失败", "expression", expression, "kv", kv, "error", err)
 			return err
 		}
+		slog.Debug("[gatewayNodeHandle] 表达式求值结果", "instID", instID, "nodeID", current.NodeID, "rawExpression", c.Expression, "resolvedExpression", expression, "kv", kv, "result", ok)
 		if ok {
 			conditionNodeIDs = append(conditionNodeIDs, c.NodeID)
 		}
@@ -110,6 +119,7 @@ func (e *Engine) gatewayNodeHandle(ctx context.Context, instID int, current *mod
 
 	// 将 conditionNodeIDs 和 InevitableNodes 合并去重
 	nextNodeIDs := pkg.MakeUnique(conditionNodeIDs, current.GWConfig.InevitableNodes)
+	slog.Debug("[gatewayNodeHandle] 下级节点列表", "instID", instID, "nodeID", current.NodeID, "conditionNodes", conditionNodeIDs, "inevitableNodes", current.GWConfig.InevitableNodes, "nextNodeIDs", nextNodeIDs)
 
 	// 处理节点结束事件
 	if err := e.runNodeEvents(ctx, current.NodeEndEvents, instID, current, prevTaskNode); err != nil {
@@ -134,6 +144,7 @@ func (e *Engine) gatewayNodeHandle(ctx context.Context, instID int, current *mod
 // endNodeHandle 结束节点处理，将数据库中此流程实例产生的数据归档。
 // status 流程实例状态：1 已完成，2 撤销。
 func (e *Engine) endNodeHandle(ctx context.Context, instID int, status int) error {
+	slog.Debug("[endNodeHandle] 流程结束，开始归档", "instID", instID, "status", status)
 	return e.db.Transaction(func(tx *gorm.DB) error {
 		txCtx := repository.WithTx(ctx, tx)
 		return e.repo.ArchiveInstance(txCtx, instID, status)

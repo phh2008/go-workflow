@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 
 	"github.com/Bunny3th/easy-workflow/internal/entity"
 	"github.com/Bunny3th/easy-workflow/internal/model"
@@ -215,6 +216,8 @@ func (e *Engine) GetInstanceStartByUser(ctx context.Context, req model.InstanceL
 // 1. 在生成流程实例的同时，就要运行开始节点
 // 2. 开始节点生成的任务自动完成，而后自动进行下一个节点的处理
 func (e *Engine) startNodeHandle(ctx context.Context, instID int, startNode *model.Node, comment, variablesJSON string) error {
+	slog.Debug("[startNodeHandle] 开始处理开始节点", "instID", instID, "nodeID", startNode.NodeID, "nodeName", startNode.NodeName)
+
 	if startNode.NodeType != model.RootNode {
 		return errors.New("不是开始节点，无法处理节点:" + startNode.NodeName)
 	}
@@ -227,13 +230,17 @@ func (e *Engine) startNodeHandle(ctx context.Context, instID int, startNode *mod
 	// 生成Task
 	taskIDs, err := e.taskNodeHandle(ctx, instID, startNode, model.Node{})
 	if err != nil {
+		slog.Debug("[startNodeHandle] taskNodeHandle 失败", "error", err)
 		return err
 	}
+	slog.Debug("[startNodeHandle] 开始节点任务已生成", "instID", instID, "taskIDs", taskIDs)
 
 	// 完成task，并获取下一步NodeID
 	if err := e.TaskPass(ctx, model.TaskActionReq{TaskID: taskIDs[0], Comment: comment, VariableJSON: variablesJSON}, false); err != nil {
+		slog.Debug("[startNodeHandle] TaskPass 失败", "error", err)
 		return err
 	}
+	slog.Debug("[startNodeHandle] 开始节点任务已自动通过", "instID", instID)
 
 	return nil
 }
