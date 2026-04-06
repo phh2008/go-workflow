@@ -138,3 +138,9 @@ type TaskFinishedListReq struct {
 type TaskInfoReq struct {
 	TaskID int `form:"taskid" json:"taskid" binding:"required"`
 }
+
+// ResolveVariablesParams 解析变量参数。
+type ResolveVariablesParams struct {
+	InstanceID int
+	Variables  []string
+}

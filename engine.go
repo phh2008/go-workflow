@@ -65,8 +65,8 @@ func (e *Engine) ProcessParse(ctx context.Context, resource string) (*model.Proc
 }
 
 // ProcessSave 保存流程定义，返回流程ID。
-func (e *Engine) ProcessSave(ctx context.Context, params model.ProcessSaveParams) (int, error) {
-	return e.internal.ProcessSave(ctx, params)
+func (e *Engine) ProcessSave(ctx context.Context, req model.ProcessSaveReq) (int, error) {
+	return e.internal.ProcessSave(ctx, req)
 }
 
 // GetProcessDefine 获取流程定义。
@@ -82,13 +82,13 @@ func (e *Engine) GetProcessList(ctx context.Context, source string) ([]entity.Pr
 // --- 流程实例 ---
 
 // InstanceStart 启动流程实例，返回实例ID。
-func (e *Engine) InstanceStart(ctx context.Context, params model.InstanceStartParams) (int, error) {
-	return e.internal.InstanceStart(ctx, params)
+func (e *Engine) InstanceStart(ctx context.Context, req model.InstanceStartReq) (int, error) {
+	return e.internal.InstanceStart(ctx, req)
 }
 
 // InstanceRevoke 撤销流程实例。
-func (e *Engine) InstanceRevoke(ctx context.Context, params model.InstanceRevokeParams) error {
-	return e.internal.InstanceRevoke(ctx, params)
+func (e *Engine) InstanceRevoke(ctx context.Context, req model.InstanceRevokeReq) error {
+	return e.internal.InstanceRevoke(ctx, req)
 }
 
 // GetInstanceInfo 获取流程实例信息。
@@ -97,30 +97,30 @@ func (e *Engine) GetInstanceInfo(ctx context.Context, instID int) (model.Instanc
 }
 
 // GetInstanceStartByUser 获取用户发起的流程实例列表（含分页和总数）。
-func (e *Engine) GetInstanceStartByUser(ctx context.Context, params model.InstanceListByUserParams) (*model.PageData[model.InstanceView], error) {
-	return e.internal.GetInstanceStartByUser(ctx, params)
+func (e *Engine) GetInstanceStartByUser(ctx context.Context, req model.InstanceListReq) (*model.PageData[model.InstanceView], error) {
+	return e.internal.GetInstanceStartByUser(ctx, req)
 }
 
 // --- 任务 ---
 
-// TaskPass 任务通过。
-func (e *Engine) TaskPass(ctx context.Context, params model.TaskPassParams) error {
-	return e.internal.TaskPass(ctx, params)
+// TaskPass 任务通过。directlyToRejected 为 true 时，直接跳到上一个驳回自己的节点。
+func (e *Engine) TaskPass(ctx context.Context, req model.TaskActionReq, directlyToRejected bool) error {
+	return e.internal.TaskPass(ctx, req, directlyToRejected)
 }
 
 // TaskReject 任务驳回。
-func (e *Engine) TaskReject(ctx context.Context, params model.TaskRejectParams) error {
-	return e.internal.TaskReject(ctx, params)
+func (e *Engine) TaskReject(ctx context.Context, req model.TaskActionReq) error {
+	return e.internal.TaskReject(ctx, req)
 }
 
 // TaskTransfer 任务转交。
-func (e *Engine) TaskTransfer(ctx context.Context, params model.TaskTransferParams) error {
-	return e.internal.TaskTransfer(ctx, params)
+func (e *Engine) TaskTransfer(ctx context.Context, req model.TaskTransferReq) error {
+	return e.internal.TaskTransfer(ctx, req)
 }
 
 // TaskFreeReject 自由驳回（驳回到上游指定节点）。
-func (e *Engine) TaskFreeReject(ctx context.Context, params model.TaskFreeRejectParams) error {
-	return e.internal.TaskFreeReject(ctx, params)
+func (e *Engine) TaskFreeReject(ctx context.Context, req model.TaskFreeRejectReq) error {
+	return e.internal.TaskFreeReject(ctx, req)
 }
 
 // GetTaskInfo 获取任务信息。
@@ -129,13 +129,13 @@ func (e *Engine) GetTaskInfo(ctx context.Context, taskID int) (model.TaskView, e
 }
 
 // GetTaskToDoList 获取待办任务列表（含分页和总数）。
-func (e *Engine) GetTaskToDoList(ctx context.Context, params model.TaskToDoListParams) (*model.PageData[model.TaskView], error) {
-	return e.internal.GetTaskToDoList(ctx, params)
+func (e *Engine) GetTaskToDoList(ctx context.Context, req model.TaskListReq) (*model.PageData[model.TaskView], error) {
+	return e.internal.GetTaskToDoList(ctx, req)
 }
 
 // GetTaskFinishedList 获取已办任务列表（含分页和总数）。
-func (e *Engine) GetTaskFinishedList(ctx context.Context, params model.TaskFinishedListParams) (*model.PageData[model.TaskView], error) {
-	return e.internal.GetTaskFinishedList(ctx, params)
+func (e *Engine) GetTaskFinishedList(ctx context.Context, req model.TaskFinishedListReq) (*model.PageData[model.TaskView], error) {
+	return e.internal.GetTaskFinishedList(ctx, req)
 }
 
 // TaskUpstreamNodeList 获取任务上游节点列表。

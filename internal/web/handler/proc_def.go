@@ -33,10 +33,7 @@ func (h *ProcDefHandler) Save(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, err.Error())
 		return
 	}
-	procID, err := h.engine.ProcessSave(c.Request.Context(), model.ProcessSaveParams{
-		Resource:     req.Resource,
-		CreateUserID: req.CreateUserID,
-	})
+	procID, err := h.engine.ProcessSave(c.Request.Context(), req)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, err.Error())
 		return

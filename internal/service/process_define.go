@@ -23,13 +23,13 @@ func (e *Engine) ProcessParse(ctx context.Context, resource string) (*model.Proc
 }
 
 // ProcessSave 流程定义保存，返回流程ID。
-func (e *Engine) ProcessSave(ctx context.Context, params model.ProcessSaveParams) (int, error) {
-	process, err := e.ProcessParse(ctx, params.Resource)
+func (e *Engine) ProcessSave(ctx context.Context, req model.ProcessSaveReq) (int, error) {
+	process, err := e.ProcessParse(ctx, req.Resource)
 	if err != nil {
 		return 0, err
 	}
 
-	if process.ProcessName == "" || process.Source == "" || params.CreateUserID == "" {
+	if process.ProcessName == "" || process.Source == "" || req.CreateUserID == "" {
 		return 0, errors.New("流程名称、来源、创建人ID不能为空")
 	}
 
@@ -55,8 +55,8 @@ func (e *Engine) ProcessSave(ctx context.Context, params model.ProcessSaveParams
 			if err := e.repo.UpdateProcDef(txCtx, repository.UpdateProcDefParams{
 				Name:     process.ProcessName,
 				Source:   process.Source,
-				Resource: params.Resource,
-				UserID:   params.CreateUserID,
+				Resource: req.Resource,
+				UserID:   req.CreateUserID,
 				Version:  newVersion,
 			}); err != nil {
 				return err
@@ -66,8 +66,8 @@ func (e *Engine) ProcessSave(ctx context.Context, params model.ProcessSaveParams
 			// 无老版本，直接插入
 			procDef := &entity.ProcDef{
 				Name:      process.ProcessName,
-				Resource:  params.Resource,
-				UserID:    params.CreateUserID,
+				Resource:  req.Resource,
+				UserID:    req.CreateUserID,
 				Source:    process.Source,
 				CreatTime: entity.Now(),
 				Version:   1,

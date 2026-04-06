@@ -62,14 +62,8 @@ type TaskNodeStatusParams struct {
 	BatchCode string
 }
 
-// NotFinishUsersParams 未完成任务用户查询参数。
-type NotFinishUsersParams struct {
-	InstID int
-	NodeID string
-}
-
-// IsNodeFinishedParams 节点完成状态查询参数。
-type IsNodeFinishedParams struct {
+// NodeQueryParams 节点查询参数（InstID + NodeID 组合）。
+type NodeQueryParams struct {
 	InstID int
 	NodeID string
 }

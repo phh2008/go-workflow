@@ -63,7 +63,7 @@ func (e *Engine) gatewayNodeHandle(ctx context.Context, instID int, current *mod
 	totalFinished := 0
 	totalPrevNodes := len(current.PrevNodeIDs)
 	for _, nodeID := range current.PrevNodeIDs {
-		finished, err := e.repo.IsNodeFinished(ctx, repository.IsNodeFinishedParams{InstID: instID, NodeID: nodeID})
+		finished, err := e.repo.IsNodeFinished(ctx, repository.NodeQueryParams{InstID: instID, NodeID: nodeID})
 		if err != nil {
 			return err
 		}

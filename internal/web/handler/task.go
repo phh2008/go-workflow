@@ -35,12 +35,7 @@ func (h *TaskHandler) Pass(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, err.Error())
 		return
 	}
-	if err := h.engine.TaskPass(c.Request.Context(), model.TaskPassParams{
-		TaskID:             req.TaskID,
-		Comment:            req.Comment,
-		VariableJSON:       req.VariableJSON,
-		DirectlyToRejected: false,
-	}); err != nil {
+	if err := h.engine.TaskPass(c.Request.Context(), req, false); err != nil {
 		c.JSON(http.StatusBadRequest, err.Error())
 		return
 	}
@@ -63,12 +58,7 @@ func (h *TaskHandler) PassDirectly(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, err.Error())
 		return
 	}
-	if err := h.engine.TaskPass(c.Request.Context(), model.TaskPassParams{
-		TaskID:             req.TaskID,
-		Comment:            req.Comment,
-		VariableJSON:       req.VariableJSON,
-		DirectlyToRejected: true,
-	}); err != nil {
+	if err := h.engine.TaskPass(c.Request.Context(), req, true); err != nil {
 		c.JSON(http.StatusBadRequest, err.Error())
 		return
 	}
@@ -91,11 +81,7 @@ func (h *TaskHandler) Reject(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, err.Error())
 		return
 	}
-	if err := h.engine.TaskReject(c.Request.Context(), model.TaskRejectParams{
-		TaskID:       req.TaskID,
-		Comment:      req.Comment,
-		VariableJSON: req.VariableJSON,
-	}); err != nil {
+	if err := h.engine.TaskReject(c.Request.Context(), req); err != nil {
 		c.JSON(http.StatusBadRequest, err.Error())
 		return
 	}
@@ -119,12 +105,7 @@ func (h *TaskHandler) FreeReject(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, err.Error())
 		return
 	}
-	if err := h.engine.TaskFreeReject(c.Request.Context(), model.TaskFreeRejectParams{
-		TaskID:         req.TaskID,
-		RejectToNodeID: req.RejectToNodeID,
-		Comment:        req.Comment,
-		VariableJSON:   req.VariableJSON,
-	}); err != nil {
+	if err := h.engine.TaskFreeReject(c.Request.Context(), req); err != nil {
 		c.JSON(http.StatusBadRequest, err.Error())
 		return
 	}
@@ -151,10 +132,7 @@ func (h *TaskHandler) Transfer(c *gin.Context) {
 	if len(users) == 1 && strings.Contains(users[0], ",") {
 		users = strings.Split(users[0], ",")
 	}
-	if err := h.engine.TaskTransfer(c.Request.Context(), model.TaskTransferParams{
-		TaskID: req.TaskID,
-		Users:  users,
-	}); err != nil {
+	if err := h.engine.TaskTransfer(c.Request.Context(), model.TaskTransferReq{TaskID: req.TaskID, Users: users}); err != nil {
 		c.JSON(http.StatusBadRequest, err.Error())
 		return
 	}
@@ -179,13 +157,7 @@ func (h *TaskHandler) ToDoList(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, err.Error())
 		return
 	}
-	result, err := h.engine.GetTaskToDoList(c.Request.Context(), model.TaskToDoListParams{
-		UserID:      req.UserID,
-		ProcessName: req.ProcessName,
-		Asc:         req.Asc,
-		PageNo:      req.GetPageNo(),
-		PageSize:    req.GetPageSize(),
-	})
+	result, err := h.engine.GetTaskToDoList(c.Request.Context(), req)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, err.Error())
 		return
@@ -212,14 +184,7 @@ func (h *TaskHandler) FinishedList(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, err.Error())
 		return
 	}
-	result, err := h.engine.GetTaskFinishedList(c.Request.Context(), model.TaskFinishedListParams{
-		UserID:          req.UserID,
-		ProcessName:     req.ProcessName,
-		IgnoreStartByMe: req.IgnoreStartByMe,
-		Asc:             req.Asc,
-		PageNo:          req.GetPageNo(),
-		PageSize:        req.GetPageSize(),
-	})
+	result, err := h.engine.GetTaskFinishedList(c.Request.Context(), req)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, err.Error())
 		return

@@ -56,7 +56,7 @@ type Repository interface {
 	CountTaskFinished(ctx context.Context, p CountFinishedParams) (int64, error)
 	ListInstanceTaskHistory(ctx context.Context, instID int) ([]model.TaskView, error)
 	GetTaskNodeStatus(ctx context.Context, p TaskNodeStatusParams) (total, passed, rejected int, err error)
-	GetNotFinishUsers(ctx context.Context, p NotFinishUsersParams) ([]string, error)
+	GetNotFinishUsers(ctx context.Context, p NodeQueryParams) ([]string, error)
 	GetPrevNodeBatchCode(ctx context.Context, taskID int) (string, error)
 	HasRejectInBatch(ctx context.Context, batchCode string) (bool, error)
 	UpdateTasksByBatchCode(ctx context.Context, batchCode string, updates map[string]any) error
@@ -69,7 +69,7 @@ type Repository interface {
 	// ---- 执行关系 ----
 
 	GetStartNodeID(ctx context.Context, procID int) (string, error)
-	IsNodeFinished(ctx context.Context, p IsNodeFinishedParams) (bool, error)
+	IsNodeFinished(ctx context.Context, p NodeQueryParams) (bool, error)
 
 	// ---- 变量 ----
 

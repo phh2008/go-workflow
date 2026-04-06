@@ -89,7 +89,7 @@ func TestGetInstanceStartByUser(t *testing.T) {
 		return 2, nil
 	}
 
-	result, err := eng.GetInstanceStartByUser(ctx, model.InstanceListByUserParams{UserID: "user1", ProcessName: "", PageNo: 1, PageSize: 10})
+	result, err := eng.GetInstanceStartByUser(ctx, model.InstanceListReq{PageQuery: model.PageQuery{PageNo: 1, PageSize: 10}, UserID: "user1", ProcessName: ""})
 	if err != nil {
 		t.Fatalf("GetInstanceStartByUser 返回错误: %v", err)
 	}
@@ -116,7 +116,7 @@ func TestGetInstanceStartByUser_WithProcessName(t *testing.T) {
 		return 1, nil
 	}
 
-	result, err := eng.GetInstanceStartByUser(ctx, model.InstanceListByUserParams{UserID: "user1", ProcessName: "请假流程", PageNo: 1, PageSize: 10})
+	result, err := eng.GetInstanceStartByUser(ctx, model.InstanceListReq{PageQuery: model.PageQuery{PageNo: 1, PageSize: 10}, UserID: "user1", ProcessName: "请假流程"})
 	if err != nil {
 		t.Fatalf("GetInstanceStartByUser 返回错误: %v", err)
 	}
@@ -140,7 +140,7 @@ func TestInstanceRevoke_Force_RepoError(t *testing.T) {
 		return 0, errors.New("流程实例不存在")
 	}
 
-	err := eng.InstanceRevoke(ctx, model.InstanceRevokeParams{InstanceID: 1, Force: true, RevokeUserID: "user1"})
+	err := eng.InstanceRevoke(ctx, model.InstanceRevokeReq{InstanceID: 1, Force: true, RevokeUserID: "user1"})
 	if err == nil {
 		t.Fatal("InstanceRevoke GetProcessIDByInstID 返回错误时应传播")
 	}

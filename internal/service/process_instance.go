@@ -129,13 +129,13 @@ func (e *Engine) instanceInit(ctx context.Context, procID int, businessID string
 }
 
 // InstanceStart 启动流程实例，返回流程实例ID。
-func (e *Engine) InstanceStart(ctx context.Context, params model.InstanceStartParams) (int, error) {
-	instID, startNode, err := e.instanceInit(ctx, params.ProcessID, params.BusinessID, params.VariablesJSON)
+func (e *Engine) InstanceStart(ctx context.Context, req model.InstanceStartReq) (int, error) {
+	instID, startNode, err := e.instanceInit(ctx, req.ProcessID, req.BusinessID, req.VariablesJSON)
 	if err != nil {
 		return 0, err
 	}
 
-	err = e.startNodeHandle(ctx, instID, startNode, params.Comment, params.VariablesJSON)
+	err = e.startNodeHandle(ctx, instID, startNode, req.Comment, req.VariablesJSON)
 	if err != nil {
 		// 删除已建立的实例记录、变量记录、任务记录
 		e.db.WithContext(ctx).Where("id=?", instID).Delete(&entity.ProcInst{})
@@ -148,15 +148,15 @@ func (e *Engine) InstanceStart(ctx context.Context, params model.InstanceStartPa
 }
 
 // InstanceRevoke 撤销流程实例。
-// params.Force 为 false 时，只有流程回到发起人这里才能撤销。
-func (e *Engine) InstanceRevoke(ctx context.Context, params model.InstanceRevokeParams) error {
-	if !params.Force {
+// req.Force 为 false 时，只有流程回到发起人这里才能撤销。
+func (e *Engine) InstanceRevoke(ctx context.Context, req model.InstanceRevokeReq) error {
+	if !req.Force {
 		// 判断当前Node是否是开始Node
 		sql := "SELECT a.id FROM proc_inst a " +
 			"JOIN proc_execution b ON a.proc_id=b.proc_id AND a.current_node_id=b.node_id " +
 			"WHERE a.id=? AND (b.prev_node_id IS NULL OR b.prev_node_id='') LIMIT 1"
 		var id int
-		if err := e.db.WithContext(ctx).Raw(sql, params.InstanceID).Scan(&id).Error; err != nil {
+		if err := e.db.WithContext(ctx).Raw(sql, req.InstanceID).Scan(&id).Error; err != nil {
 			return err
 		}
 		if id == 0 {
@@ -165,7 +165,7 @@ func (e *Engine) InstanceRevoke(ctx context.Context, params model.InstanceRevoke
 	}
 
 	// 获取流程ID
-	procID, err := e.repo.GetProcessIDByInstID(ctx, params.InstanceID)
+	procID, err := e.repo.GetProcessIDByInstID(ctx, req.InstanceID)
 	if err != nil {
 		return err
 	}
@@ -177,12 +177,12 @@ func (e *Engine) InstanceRevoke(ctx context.Context, params model.InstanceRevoke
 	}
 
 	// 执行流程撤销事件
-	if err := e.runProcEvents(ctx, process.RevokeEvents, params.InstanceID, params.RevokeUserID); err != nil {
+	if err := e.runProcEvents(ctx, process.RevokeEvents, req.InstanceID, req.RevokeUserID); err != nil {
 		return err
 	}
 
 	// 调用 endNodeHandle，做数据清理归档
-	return e.endNodeHandle(ctx, params.InstanceID, 2)
+	return e.endNodeHandle(ctx, req.InstanceID, 2)
 }
 
 // GetInstanceInfo 获取流程实例信息。
@@ -191,25 +191,24 @@ func (e *Engine) GetInstanceInfo(ctx context.Context, instID int) (model.Instanc
 }
 
 // GetInstanceStartByUser 获取起始人为特定用户的流程实例（含分页和总数）。
-func (e *Engine) GetInstanceStartByUser(ctx context.Context, params model.InstanceListByUserParams) (*model.PageData[model.InstanceView], error) {
-	offset := (params.PageNo - 1) * params.PageSize
+func (e *Engine) GetInstanceStartByUser(ctx context.Context, req model.InstanceListReq) (*model.PageData[model.InstanceView], error) {
 	instances, err := e.repo.ListInstanceStartByUser(ctx, repository.ListInstByUserParams{
-		UserID:      params.UserID,
-		ProcessName: params.ProcessName,
-		Offset:      offset,
-		Limit:       params.PageSize,
+		UserID:      req.UserID,
+		ProcessName: req.ProcessName,
+		Offset:      req.Offset(),
+		Limit:       req.GetPageSize(),
 	})
 	if err != nil {
 		return nil, err
 	}
 	count, err := e.repo.CountInstanceStartByUser(ctx, repository.CountByUserParams{
-		UserID:      params.UserID,
-		ProcessName: params.ProcessName,
+		UserID:      req.UserID,
+		ProcessName: req.ProcessName,
 	})
 	if err != nil {
 		return nil, err
 	}
-	return model.NewPageData[model.InstanceView](params.PageNo, params.PageSize).SetData(instances).SetCount(count), nil
+	return model.NewPageData[model.InstanceView](req.GetPageNo(), req.GetPageSize()).SetData(instances).SetCount(count), nil
 }
 
 // startNodeHandle 开始节点处理。开始节点是一个特殊的任务节点：
@@ -232,12 +231,7 @@ func (e *Engine) startNodeHandle(ctx context.Context, instID int, startNode *mod
 	}
 
 	// 完成task，并获取下一步NodeID
-	if err := e.TaskPass(ctx, model.TaskPassParams{
-		TaskID:             taskIDs[0],
-		Comment:            comment,
-		VariableJSON:       variablesJSON,
-		DirectlyToRejected: false,
-	}); err != nil {
+	if err := e.TaskPass(ctx, model.TaskActionReq{TaskID: taskIDs[0], Comment: comment, VariableJSON: variablesJSON}, false); err != nil {
 		return err
 	}
 

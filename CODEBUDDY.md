@@ -51,7 +51,7 @@ easy-workflow/
 │   │   ├── instance_view.go           # InstanceView（实例查询视图模型）
 │   │   ├── action.go                  # TaskAction
 │   │   ├── variable.go                # Variable
-│   │   └── request.go                 # 请求/响应参数结构体
+│   │   └── request.go                 # 请求/响应参数结构体（Handler 与 Service 共享）
 │   ├── repository/                    # 数据访问层
 │   │   ├── interfaces.go              # Repository 接口定义 + WithTx()
 │   │   ├── gorm_repo.go               # GORM 实现（ctxDB 从 context 提取事务）
@@ -129,8 +129,8 @@ if err != nil {
 
 eng.RegisterEvents(&MyEvent{})
 ctx := context.Background()
-id, err := eng.InstanceStart(ctx, procID, businessID, comment, variablesJSON)
-err = eng.TaskPass(ctx, taskID, comment, variablesJSON, false)
+id, err := eng.InstanceStart(ctx, model.InstanceStartReq{ProcessID: procID, BusinessID: businessID, Comment: comment, VariablesJSON: variablesJSON})
+err = eng.TaskPass(ctx, model.TaskActionReq{TaskID: taskID, Comment: comment, VariableJSON: variablesJSON}, false)
 
 // 可选：启动 Web API
 eng.StartWebAPI(ginEngine, easyworkflow.WebConfig{
@@ -172,24 +172,25 @@ Repository 接口的所有方法均接受 `ctx context.Context`，**不**接受 
 
 ### 请求参数结构化
 
-Web handler 使用 `c.ShouldBind(&req)` 绑定请求参数，参数定义在 `internal/model/request.go`：
+`internal/model/request.go` 中定义的请求结构体同时供 Web Handler（`ShouldBind` 绑定）和 Service 层（方法参数）共享，无需在不同层之间定义重复的结构体。Handler 绑定请求后直接将 `req` 传给 Service。
 
 | 结构体 | 用途 | 嵌套 |
 |--------|------|------|
-| `PageQuery` | 分页（pageNo/pageSize，带默认值） | 被 TaskListReq、InstanceListReq 嵌套 |
+| `PageQuery` | 分页（pageNo/pageSize，带默认值方法） | 被 TaskListReq、InstanceListReq 嵌套 |
 | `PageData[T]` | 泛型分页响应 | |
-| `TaskActionReq` | Pass/Reject 共享 | 被 TaskFreeRejectReq 嵌套 |
+| `TaskActionReq` | Pass/Reject 共享（Service 直接接收） | 被 TaskFreeRejectReq 嵌套 |
 | `TaskFreeRejectReq` | 自由驳回 | 嵌套 TaskActionReq |
 | `TaskTransferReq` | 任务转交 | |
-| `TaskInfoReq` | 任务信息查询 | |
-| `TaskListReq` | 待办任务列表 | 嵌套 PageQuery |
-| `TaskFinishedListReq` | 已办任务列表 | 嵌套 TaskListReq |
+| `TaskInfoReq` | 任务信息查询（仅 Handler 使用） | |
+| `TaskListReq` | 待办任务列表（Service 直接接收） | 嵌套 PageQuery |
+| `TaskFinishedListReq` | 已办任务列表（Service 直接接收） | 嵌套 TaskListReq |
 | `InstanceStartReq` | 启动流程实例 | |
 | `InstanceRevokeReq` | 撤销流程实例 | |
-| `InstanceListReq` | 流程实例列表 | 嵌套 PageQuery |
+| `InstanceListReq` | 流程实例列表（Service 直接接收） | 嵌套 PageQuery |
 | `ProcessSaveReq` | 保存流程定义 | |
-| `ProcessListReq` | 流程定义列表 | |
-| `ProcessDefGetReq` | 获取流程定义 | |
+| `ProcessListReq` | 流程定义列表（仅 Handler 使用） | |
+| `ProcessDefGetReq` | 获取流程定义（仅 Handler 使用） | |
+| `ResolveVariablesParams` | 解析变量（仅 Service/API 使用，无 HTTP 绑定 tag） | |
 
 ### 核心概念与数据流
 
@@ -213,23 +214,24 @@ Web handler 使用 `c.ShouldBind(&req)` 绑定请求参数，参数定义在 `in
 
 | 方法 | 说明 |
 |------|------|
-| `InstanceRevoke(ctx, instID, userID, comment)` | 撤销流程实例 |
-| `TaskReject(ctx, taskID, comment, variables, isDirectly)` | 任务驳回 |
-| `TaskFreeReject(ctx, taskID, comment, variables, targetNodeID)` | 自由驳回 |
-| `TaskTransfer(ctx, taskID, comment, variables, toUserIDs)` | 任务转交 |
+| `InstanceRevoke(ctx, InstanceRevokeReq)` | 撤销流程实例 |
+| `TaskPass(ctx, TaskActionReq, directlyToRejected)` | 任务通过，directlyToRejected=true 时直接跳到上一个驳回自己的节点 |
+| `TaskReject(ctx, TaskActionReq)` | 任务驳回 |
+| `TaskFreeReject(ctx, TaskFreeRejectReq)` | 自由驳回 |
+| `TaskTransfer(ctx, TaskTransferReq)` | 任务转交 |
 | `GetTaskInfo(ctx, taskID)` | 获取任务信息 |
-| `GetTaskToDoList(ctx, userID, processName, asc, pageNo, pageSize)` | 待办任务列表（分页） |
-| `GetTaskFinishedList(ctx, userID, processName, ignoreStartByMe, asc, pageNo, pageSize)` | 已办任务列表（分页） |
+| `GetTaskToDoList(ctx, TaskListReq)` | 待办任务列表（分页） |
+| `GetTaskFinishedList(ctx, TaskFinishedListReq)` | 已办任务列表（分页） |
 | `WhatCanIDo(ctx, taskID)` | 当前任务可执行操作 |
 | `TaskUpstreamNodeList(ctx, taskID)` | 上游节点列表 |
 | `GetInstanceTaskHistory(ctx, instID)` | 实例任务历史 |
 | `GetInstanceInfo(ctx, instID)` | 获取实例信息 |
-| `GetInstanceStartByUser(ctx, userID, processName, pageNo, pageSize)` | 用户发起的实例列表（分页） |
+| `GetInstanceStartByUser(ctx, InstanceListReq)` | 用户发起的实例列表（分页） |
 | `GetProcessDefine(ctx, procID)` | 获取流程定义 |
 | `GetProcessList(ctx, source)` | 获取流程定义列表 |
-| `ProcessSave(ctx, resource, createUserID)` | 保存流程定义 |
+| `ProcessSave(ctx, ProcessSaveReq)` | 保存流程定义 |
 | `ProcessParse(ctx, resource)` | 解析流程定义 JSON |
-| `ResolveVariables(ctx, instID, variables)` | 解析流程变量 |
+| `ResolveVariables(ctx, ResolveVariablesParams)` | 解析流程变量 |
 | `ScheduleTask(ctx, name, startAt, stopAt, intervalSec, fn)` | 注册定时任务 |
 | `DB()` | 返回底层 GORM DB 实例 |
 
@@ -307,7 +309,7 @@ Web handler 使用 `c.ShouldBind(&req)` 绑定请求参数，参数定义在 `in
 - `/inst/*` — 流程实例操作
 - `/task/*` — 任务操作
 
-Handler 通过 struct 持有 `*service.Engine` 引用，使用 `c.ShouldBind(&req)` 绑定请求参数到 `model/request.go` 中定义的结构体。
+Handler 通过 struct 持有 `*service.Engine` 引用，使用 `c.ShouldBind(&req)` 绑定请求参数后直接将 `req` 传给 Service，无需层间转换。
 
 当 `WebConfig.ShowSwagger=true` 时，自动注册 Swagger 文档路由（文档生成自 `example/docs/`，需提前用 `swag init` 生成）。
 
@@ -322,7 +324,7 @@ Handler 通过 struct 持有 `*service.Engine` 引用，使用 `c.ShouldBind(&re
 - **手动依赖注入**：通过构造函数注入依赖，不使用 Wire。`NewEngine(db, cfg)` 接受外部 `*gorm.DB`
 - **context.Context**：所有 service/repository 方法第一个参数为 `ctx context.Context`
 - **事务管理**：Service 层使用 `db.Transaction()`，Repository 通过 `repository.WithTx(ctx, tx)` 从 context 获取事务连接
-- **请求参数结构化**：Handler 使用 `model/request.go` 中定义的 struct + `ShouldBind` 绑定参数
+- **请求参数结构化**：`model/request.go` 中的 Req 结构体同时用于 Handler（`ShouldBind` 绑定）和 Service（方法参数），Handler 绑定后直接传 req 给 Service
 - **数据库访问**：通过 `Repository` 接口抽象，实现层通过 `ctxDB(ctx)` 从 context 获取连接，混合使用 GORM ORM 和原生 SQL
 - **日志**：统一使用 `slog`，引擎接受可选的 `*slog.Logger`，默认使用 `slog.Default()`
 - **注释**：全部使用中文注释，导出符号使用 godoc 格式

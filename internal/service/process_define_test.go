@@ -94,7 +94,7 @@ func TestProcessSave_EmptyName(t *testing.T) {
 	ctx := context.Background()
 
 	resource := `{"ProcessName":"","Source":"OA","Nodes":[]}`
-	_, err := eng.ProcessSave(ctx, model.ProcessSaveParams{Resource: resource, CreateUserID: "user1"})
+	_, err := eng.ProcessSave(ctx, model.ProcessSaveReq{Resource: resource, CreateUserID: "user1"})
 	if err == nil {
 		t.Fatal("ProcessSave 空名称应返回错误")
 	}
@@ -106,7 +106,7 @@ func TestProcessSave_EmptySource(t *testing.T) {
 	ctx := context.Background()
 
 	resource := `{"ProcessName":"请假","Source":"","Nodes":[]}`
-	_, err := eng.ProcessSave(ctx, model.ProcessSaveParams{Resource: resource, CreateUserID: "user1"})
+	_, err := eng.ProcessSave(ctx, model.ProcessSaveReq{Resource: resource, CreateUserID: "user1"})
 	if err == nil {
 		t.Fatal("ProcessSave 空来源应返回错误")
 	}
@@ -118,7 +118,7 @@ func TestProcessSave_EmptyCreateUserID(t *testing.T) {
 	ctx := context.Background()
 
 	resource := `{"ProcessName":"请假","Source":"OA","Nodes":[]}`
-	_, err := eng.ProcessSave(ctx, model.ProcessSaveParams{Resource: resource, CreateUserID: ""})
+	_, err := eng.ProcessSave(ctx, model.ProcessSaveReq{Resource: resource, CreateUserID: ""})
 	if err == nil {
 		t.Fatal("ProcessSave 空创建人ID应返回错误")
 	}
@@ -129,7 +129,7 @@ func TestProcessSave_InvalidJSON(t *testing.T) {
 	eng := newTestEngine(repo)
 	ctx := context.Background()
 
-	_, err := eng.ProcessSave(ctx, model.ProcessSaveParams{Resource: "invalid", CreateUserID: "user1"})
+	_, err := eng.ProcessSave(ctx, model.ProcessSaveReq{Resource: "invalid", CreateUserID: "user1"})
 	if err == nil {
 		t.Fatal("ProcessSave 无效 JSON 应返回错误")
 	}

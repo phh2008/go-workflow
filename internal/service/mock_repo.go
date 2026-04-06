@@ -41,7 +41,7 @@ type mockRepo struct {
 	CountTaskFinishedFunc       func(ctx context.Context, p repository.CountFinishedParams) (int64, error)
 	ListInstanceTaskHistoryFunc func(ctx context.Context, instID int) ([]model.TaskView, error)
 	GetTaskNodeStatusFunc       func(ctx context.Context, p repository.TaskNodeStatusParams) (int, int, int, error)
-	GetNotFinishUsersFunc       func(ctx context.Context, p repository.NotFinishUsersParams) ([]string, error)
+	GetNotFinishUsersFunc       func(ctx context.Context, p repository.NodeQueryParams) ([]string, error)
 	GetPrevNodeBatchCodeFunc    func(ctx context.Context, taskID int) (string, error)
 	HasRejectInBatchFunc        func(ctx context.Context, batchCode string) (bool, error)
 	UpdateTasksByBatchCodeFunc  func(ctx context.Context, batchCode string, updates map[string]any) error
@@ -53,7 +53,7 @@ type mockRepo struct {
 
 	// 执行关系
 	GetStartNodeIDFunc func(ctx context.Context, procID int) (string, error)
-	IsNodeFinishedFunc func(ctx context.Context, p repository.IsNodeFinishedParams) (bool, error)
+	IsNodeFinishedFunc func(ctx context.Context, p repository.NodeQueryParams) (bool, error)
 
 	// 变量
 	SaveVariableFunc     func(ctx context.Context, instID int, variables []model.Variable) error
@@ -215,7 +215,7 @@ func (m *mockRepo) GetTaskNodeStatus(ctx context.Context, p repository.TaskNodeS
 	}
 	return 0, 0, 0, nil
 }
-func (m *mockRepo) GetNotFinishUsers(ctx context.Context, p repository.NotFinishUsersParams) ([]string, error) {
+func (m *mockRepo) GetNotFinishUsers(ctx context.Context, p repository.NodeQueryParams) ([]string, error) {
 	if m.GetNotFinishUsersFunc != nil {
 		return m.GetNotFinishUsersFunc(ctx, p)
 	}
@@ -275,7 +275,7 @@ func (m *mockRepo) GetStartNodeID(ctx context.Context, procID int) (string, erro
 	}
 	return "", nil
 }
-func (m *mockRepo) IsNodeFinished(ctx context.Context, p repository.IsNodeFinishedParams) (bool, error) {
+func (m *mockRepo) IsNodeFinished(ctx context.Context, p repository.NodeQueryParams) (bool, error) {
 	if m.IsNodeFinishedFunc != nil {
 		return m.IsNodeFinishedFunc(ctx, p)
 	}

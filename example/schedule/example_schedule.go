@@ -38,9 +38,9 @@ func AutoFinishTask(eng *easyworkflow.Engine) func() {
 			}
 
 			if _, ok := PrevNodeIDs[task.PrevNodeID]; ok {
-				err = eng.TaskPass(ctx, model.TaskPassParams{TaskID: task.TaskID, Comment: "免审自动通过"})
+				err = eng.TaskPass(ctx, model.TaskActionReq{TaskID: task.TaskID, Comment: "免审自动通过"}, false)
 			} else {
-				err = eng.TaskReject(ctx, model.TaskRejectParams{TaskID: task.TaskID, Comment: "免审自动驳回"})
+				err = eng.TaskReject(ctx, model.TaskActionReq{TaskID: task.TaskID, Comment: "免审自动驳回"})
 			}
 			if err != nil {
 				slog.Error("自动完成任务处理失败", "error", err, "taskID", task.TaskID)

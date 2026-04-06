@@ -76,7 +76,7 @@ func TestGetTaskToDoList(t *testing.T) {
 		return 2, nil
 	}
 
-	result, err := eng.GetTaskToDoList(ctx, model.TaskToDoListParams{UserID: "user1", ProcessName: "请假", Asc: true, PageNo: 1, PageSize: 10})
+	result, err := eng.GetTaskToDoList(ctx, model.TaskListReq{PageQuery: model.PageQuery{PageNo: 1, PageSize: 10}, UserID: "user1", ProcessName: "请假", Asc: true})
 	if err != nil {
 		t.Fatalf("GetTaskToDoList 返回错误: %v", err)
 	}
@@ -114,7 +114,7 @@ func TestGetTaskFinishedList(t *testing.T) {
 		return 1, nil
 	}
 
-	result, err := eng.GetTaskFinishedList(ctx, model.TaskFinishedListParams{UserID: "user2", ProcessName: "", IgnoreStartByMe: true, Asc: false, PageNo: 1, PageSize: 20})
+	result, err := eng.GetTaskFinishedList(ctx, model.TaskFinishedListReq{TaskListReq: model.TaskListReq{PageQuery: model.PageQuery{PageNo: 1, PageSize: 20}, UserID: "user2", ProcessName: "", Asc: false}, IgnoreStartByMe: true})
 	if err != nil {
 		t.Fatalf("GetTaskFinishedList 返回错误: %v", err)
 	}
@@ -354,12 +354,12 @@ func TestTaskTransfer_EmptyUsers(t *testing.T) {
 	eng := newTestEngine(repo)
 	ctx := context.Background()
 
-	err := eng.TaskTransfer(ctx, model.TaskTransferParams{TaskID: 1, Users: nil})
+	err := eng.TaskTransfer(ctx, model.TaskTransferReq{TaskID: 1, Users: nil})
 	if err == nil {
 		t.Fatal("TaskTransfer 空 users 应返回错误")
 	}
 
-	err = eng.TaskTransfer(ctx, model.TaskTransferParams{TaskID: 1, Users: []string{}})
+	err = eng.TaskTransfer(ctx, model.TaskTransferReq{TaskID: 1, Users: []string{}})
 	if err == nil {
 		t.Fatal("TaskTransfer 空 users 切片应返回错误")
 	}
@@ -374,7 +374,7 @@ func TestTaskTransfer_AlreadyFinished(t *testing.T) {
 		return model.TaskView{TaskID: 1, IsFinished: 1}, nil
 	}
 
-	err := eng.TaskTransfer(ctx, model.TaskTransferParams{TaskID: 1, Users: []string{"newuser"}})
+	err := eng.TaskTransfer(ctx, model.TaskTransferReq{TaskID: 1, Users: []string{"newuser"}})
 	if err == nil {
 		t.Fatal("TaskTransfer 已完成任务应返回错误")
 	}

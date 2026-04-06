@@ -20,24 +20,24 @@ type taskOption struct {
 }
 
 // TaskPass 通过任务，在本节点处理完毕的情况下会自动处理下一个节点。
-// params.DirectlyToRejected 为 true 时，直接跳到上一个驳回自己的节点。
-func (e *Engine) TaskPass(ctx context.Context, params model.TaskPassParams) error {
-	return e.processTask(ctx, params.TaskID, params.Comment, params.VariableJSON, taskOption{status: 1, directlyToWhoRejectedMe: params.DirectlyToRejected})
+// directlyToRejected 为 true 时，直接跳到上一个驳回自己的节点。
+func (e *Engine) TaskPass(ctx context.Context, req model.TaskActionReq, directlyToRejected bool) error {
+	return e.processTask(ctx, req.TaskID, req.Comment, req.VariableJSON, taskOption{status: 1, directlyToWhoRejectedMe: directlyToRejected})
 }
 
 // TaskReject 驳回任务，在本节点处理完毕的情况下会自动处理下一个节点。
-func (e *Engine) TaskReject(ctx context.Context, params model.TaskRejectParams) error {
-	return e.processTask(ctx, params.TaskID, params.Comment, params.VariableJSON, taskOption{status: 2})
+func (e *Engine) TaskReject(ctx context.Context, req model.TaskActionReq) error {
+	return e.processTask(ctx, req.TaskID, req.Comment, req.VariableJSON, taskOption{status: 2})
 }
 
 // TaskTransfer 将任务转交给其他用户处理。
-func (e *Engine) TaskTransfer(ctx context.Context, params model.TaskTransferParams) error {
-	users := pkg.MakeUnique(params.Users)
+func (e *Engine) TaskTransfer(ctx context.Context, req model.TaskTransferReq) error {
+	users := pkg.MakeUnique(req.Users)
 	if len(users) < 1 {
 		return errors.New("转让任务操作必须指定至少一个候选人")
 	}
 
-	taskInfo, err := e.GetTaskInfo(ctx, params.TaskID)
+	taskInfo, err := e.GetTaskInfo(ctx, req.TaskID)
 	if err != nil {
 		return err
 	}
@@ -50,7 +50,7 @@ func (e *Engine) TaskTransfer(ctx context.Context, params model.TaskTransferPara
 		txCtx := repository.WithTx(ctx, tx)
 
 		// 删除原任务
-		if err := e.repo.DeleteTaskByID(txCtx, params.TaskID); err != nil {
+		if err := e.repo.DeleteTaskByID(txCtx, req.TaskID); err != nil {
 			return err
 		}
 
@@ -83,14 +83,14 @@ func (e *Engine) TaskTransfer(ctx context.Context, params model.TaskTransferPara
 }
 
 // TaskFreeReject 自由驳回到任意一个上游节点。
-func (e *Engine) TaskFreeReject(ctx context.Context, params model.TaskFreeRejectParams) error {
-	taskInfo, err := e.GetTaskInfo(ctx, params.TaskID)
+func (e *Engine) TaskFreeReject(ctx context.Context, req model.TaskFreeRejectReq) error {
+	taskInfo, err := e.GetTaskInfo(ctx, req.TaskID)
 	if err != nil {
 		return err
 	}
 
 	if taskInfo.IsFinished == 1 {
-		return fmt.Errorf("节点ID%d已处理，无需操作", params.TaskID)
+		return fmt.Errorf("节点ID%d已处理，无需操作", req.TaskID)
 	}
 
 	currentNode, err := e.getInstanceNode(ctx, taskInfo.ProcInstID, taskInfo.NodeID)
@@ -102,17 +102,17 @@ func (e *Engine) TaskFreeReject(ctx context.Context, params model.TaskFreeReject
 		return errors.New("起始节点无法驳回!")
 	}
 
-	rejectToNode, err := e.getInstanceNode(ctx, taskInfo.ProcInstID, params.RejectToNodeID)
+	rejectToNode, err := e.getInstanceNode(ctx, taskInfo.ProcInstID, req.RejectToNodeID)
 	if err != nil {
 		return err
 	}
 
-	if err := e.taskSubmit(ctx, taskInfo, params.Comment, params.VariableJSON, 2); err != nil {
+	if err := e.taskSubmit(ctx, taskInfo, req.Comment, req.VariableJSON, 2); err != nil {
 		return err
 	}
 
 	if err := e.processNode(ctx, taskInfo.ProcInstID, &rejectToNode, currentNode); err != nil {
-		e.taskRevoke(ctx, params.TaskID)
+		e.taskRevoke(ctx, req.TaskID)
 		return err
 	}
 
@@ -125,51 +125,49 @@ func (e *Engine) GetTaskInfo(ctx context.Context, taskID int) (model.TaskView, e
 }
 
 // GetTaskToDoList 获取特定用户待办任务列表（含分页和总数）。
-func (e *Engine) GetTaskToDoList(ctx context.Context, params model.TaskToDoListParams) (*model.PageData[model.TaskView], error) {
-	offset := (params.PageNo - 1) * params.PageSize
+func (e *Engine) GetTaskToDoList(ctx context.Context, req model.TaskListReq) (*model.PageData[model.TaskView], error) {
 	tasks, err := e.repo.ListTaskToDo(ctx, repository.ListToDoParams{
-		UserID:      params.UserID,
-		ProcessName: params.ProcessName,
-		Asc:         params.Asc,
-		Offset:      offset,
-		Limit:       params.PageSize,
+		UserID:      req.UserID,
+		ProcessName: req.ProcessName,
+		Asc:         req.Asc,
+		Offset:      req.Offset(),
+		Limit:       req.GetPageSize(),
 	})
 	if err != nil {
 		return nil, err
 	}
 	count, err := e.repo.CountTaskToDo(ctx, repository.CountByUserParams{
-		UserID:      params.UserID,
-		ProcessName: params.ProcessName,
+		UserID:      req.UserID,
+		ProcessName: req.ProcessName,
 	})
 	if err != nil {
 		return nil, err
 	}
-	return model.NewPageData[model.TaskView](params.PageNo, params.PageSize).SetData(tasks).SetCount(count), nil
+	return model.NewPageData[model.TaskView](req.GetPageNo(), req.GetPageSize()).SetData(tasks).SetCount(count), nil
 }
 
 // GetTaskFinishedList 获取特定用户已完成任务列表（含分页和总数）。
-func (e *Engine) GetTaskFinishedList(ctx context.Context, params model.TaskFinishedListParams) (*model.PageData[model.TaskView], error) {
-	offset := (params.PageNo - 1) * params.PageSize
+func (e *Engine) GetTaskFinishedList(ctx context.Context, req model.TaskFinishedListReq) (*model.PageData[model.TaskView], error) {
 	tasks, err := e.repo.ListTaskFinished(ctx, repository.ListFinishedParams{
-		UserID:          params.UserID,
-		ProcessName:     params.ProcessName,
-		IgnoreStartByMe: params.IgnoreStartByMe,
-		Asc:             params.Asc,
-		Offset:          offset,
-		Limit:           params.PageSize,
+		UserID:          req.UserID,
+		ProcessName:     req.ProcessName,
+		IgnoreStartByMe: req.IgnoreStartByMe,
+		Asc:             req.Asc,
+		Offset:          req.Offset(),
+		Limit:           req.GetPageSize(),
 	})
 	if err != nil {
 		return nil, err
 	}
 	count, err := e.repo.CountTaskFinished(ctx, repository.CountFinishedParams{
-		UserID:          params.UserID,
-		ProcessName:     params.ProcessName,
-		IgnoreStartByMe: params.IgnoreStartByMe,
+		UserID:          req.UserID,
+		ProcessName:     req.ProcessName,
+		IgnoreStartByMe: req.IgnoreStartByMe,
 	})
 	if err != nil {
 		return nil, err
 	}
-	return model.NewPageData[model.TaskView](params.PageNo, params.PageSize).SetData(tasks).SetCount(count), nil
+	return model.NewPageData[model.TaskView](req.GetPageNo(), req.GetPageSize()).SetData(tasks).SetCount(count), nil
 }
 
 // TaskUpstreamNodeList 根据流程定义，列出 task 所在节点的所有上游节点。
@@ -237,7 +235,7 @@ func (e *Engine) WhatCanIDo(ctx context.Context, taskID int) (model.TaskAction, 
 // createTask 生成任务，返回生成的任务ID数组。
 func (e *Engine) createTask(ctx context.Context, instID int, nodeID string, prevNodeID string, userIDs []string) ([]int, error) {
 	// 获取本节点中未结束任务的用户
-	notFinishUsers, err := e.repo.GetNotFinishUsers(ctx, repository.NotFinishUsersParams{InstID: instID, NodeID: nodeID})
+	notFinishUsers, err := e.repo.GetNotFinishUsers(ctx, repository.NodeQueryParams{InstID: instID, NodeID: nodeID})
 	if err != nil {
 		return nil, err
 	}

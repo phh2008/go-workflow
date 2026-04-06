@@ -496,7 +496,7 @@ func (r *FlowRepo) GetTaskNodeStatus(ctx context.Context, p TaskNodeStatusParams
 }
 
 // GetNotFinishUsers 获取某节点中未完成任务的用户ID列表。
-func (r *FlowRepo) GetNotFinishUsers(ctx context.Context, p NotFinishUsersParams) ([]string, error) {
+func (r *FlowRepo) GetNotFinishUsers(ctx context.Context, p NodeQueryParams) ([]string, error) {
 	var userIDs []string
 	if err := r.ctxDB(ctx).
 		Model(&entity.ProcTask{}).
@@ -631,7 +631,7 @@ func (r *FlowRepo) GetStartNodeID(ctx context.Context, procID int) (string, erro
 }
 
 // IsNodeFinished 判断特定实例中某一个节点是否已经全部完成。
-func (r *FlowRepo) IsNodeFinished(ctx context.Context, p IsNodeFinishedParams) (bool, error) {
+func (r *FlowRepo) IsNodeFinished(ctx context.Context, p NodeQueryParams) (bool, error) {
 	type countResult struct {
 		Total    int `gorm:"column:total"`
 		Finished int `gorm:"column:finished"`
