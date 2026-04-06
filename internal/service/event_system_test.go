@@ -2,84 +2,82 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"testing"
 
+	"github.com/Bunny3th/easy-workflow/internal/event"
 	"github.com/Bunny3th/easy-workflow/internal/model"
 )
 
-// testNodeEvent has valid node event methods
-type testNodeEvent struct{}
-
-func (e *testNodeEvent) ValidNodeEvent(id int, cur *model.Node, prev model.Node) error { return nil }
-func (e *testNodeEvent) AnotherEvent(id int, cur *model.Node, prev model.Node) error    { return nil }
-
-// testProcEvent has valid proc event methods
-type testProcEvent struct{}
-
-func (e *testProcEvent) ValidRevokeEvent(id int, uid string) error { return nil }
-
-// testEventWithEngine has SetEngine
-type testEventWithEngine struct{ eng *Engine }
-
-func (e *testEventWithEngine) SetEngine(eng *Engine) { e.eng = eng }
-func (e *testEventWithEngine) SomeNodeEvent(id int, cur *model.Node, prev model.Node) error {
+// testNodeHandler returns nil
+func testNodeHandler(ctx context.Context, id int, cur *model.Node, prev model.Node) error {
 	return nil
 }
 
-// badSignatureEvent has wrong method signatures
-type badSignatureEvent struct{}
-
-func (e *badSignatureEvent) WrongParams(a, b string) error { return nil }
-
-// errorEvent returns error when called
-type errorEvent struct{}
-
-func (e *errorEvent) ErrorEvent(id int, cur *model.Node, prev model.Node) error {
-	return fmt.Errorf("event error")
+// anotherNodeHandler returns nil
+func anotherNodeHandler(ctx context.Context, id int, cur *model.Node, prev model.Node) error {
+	return nil
 }
 
-// errorProcEvent returns error when called
-type errorProcEvent struct{}
+// testProcHandler returns nil
+func testProcHandler(ctx context.Context, instID int, uid string) error {
+	return nil
+}
 
-func (e *errorProcEvent) ErrorRevokeEvent(id int, uid string) error {
+// errorNodeHandler returns an error
+func errorNodeHandler(ctx context.Context, id int, cur *model.Node, prev model.Node) error {
+	return fmt.Errorf("node event error")
+}
+
+// errorProcHandler returns an error
+func errorProcHandler(ctx context.Context, instID int, uid string) error {
 	return fmt.Errorf("proc event error")
 }
 
-
-func TestRegisterEvents(t *testing.T) {
+func TestRegisterNodeEvent(t *testing.T) {
 	repo := &mockRepo{}
 	eng := newTestEngine(repo)
 
-	eng.RegisterEvents(&testNodeEvent{})
+	handler := event.NodeEventHandler(testNodeHandler)
+	eng.RegisterNodeEvent("TestNodeEvent", handler)
 
-	// verify methods are registered
-	if _, ok := eng.getEvent("ValidNodeEvent"); !ok {
-		t.Error("expected ValidNodeEvent to be registered")
-	}
-	if _, ok := eng.getEvent("AnotherEvent"); !ok {
-		t.Error("expected AnotherEvent to be registered")
+	eng.eventMu.RLock()
+	_, ok := eng.nodeEventPool["TestNodeEvent"]
+	eng.eventMu.RUnlock()
+	if !ok {
+		t.Error("expected TestNodeEvent to be registered in nodeEventPool")
 	}
 
-	// verify running registered node events works
-	ctx := context.Background()
-	cur := &model.Node{NodeID: "node1", NodeName: "Node1"}
-	prev := model.Node{NodeID: "node0", NodeName: "Node0"}
-	err := eng.runNodeEvents(ctx, []string{"ValidNodeEvent"}, 1, cur, prev)
-	if err != nil {
-		t.Errorf("expected no error, got: %v", err)
+	// verify it does NOT appear in procEventPool
+	eng.eventMu.RLock()
+	_, ok = eng.procEventPool["TestNodeEvent"]
+	eng.eventMu.RUnlock()
+	if ok {
+		t.Error("expected TestNodeEvent NOT to be registered in procEventPool")
 	}
 }
 
-func TestRegisterEvents_SetEngine(t *testing.T) {
+func TestRegisterProcEvent(t *testing.T) {
 	repo := &mockRepo{}
 	eng := newTestEngine(repo)
 
-	evt := &testEventWithEngine{}
-	eng.RegisterEvents(evt)
+	handler := event.ProcEventHandler(testProcHandler)
+	eng.RegisterProcEvent("TestProcEvent", handler)
 
-	if evt.eng == nil {
-		t.Error("expected SetEngine to be called, eng is nil")
+	eng.eventMu.RLock()
+	_, ok := eng.procEventPool["TestProcEvent"]
+	eng.eventMu.RUnlock()
+	if !ok {
+		t.Error("expected TestProcEvent to be registered in procEventPool")
+	}
+
+	// verify it does NOT appear in nodeEventPool
+	eng.eventMu.RLock()
+	_, ok = eng.nodeEventPool["TestProcEvent"]
+	eng.eventMu.RUnlock()
+	if ok {
+		t.Error("expected TestProcEvent NOT to be registered in nodeEventPool")
 	}
 }
 
@@ -92,29 +90,30 @@ func TestRunNodeEvents(t *testing.T) {
 	// register events and call runNodeEvents - no error
 	t.Run("no error", func(t *testing.T) {
 		eng := newTestEngine(repo)
-		eng.RegisterEvents(&testNodeEvent{})
-		err := eng.runNodeEvents(ctx, []string{"ValidNodeEvent", "AnotherEvent"}, 1, cur, prev)
+		eng.RegisterNodeEvent("TestNodeEvent", testNodeHandler)
+		eng.RegisterNodeEvent("AnotherEvent", anotherNodeHandler)
+		err := eng.runNodeEvents(ctx, []string{"TestNodeEvent", "AnotherEvent"}, 1, cur, prev)
 		if err != nil {
 			t.Errorf("expected no error, got: %v", err)
 		}
 	})
 
-	// register errorEvent with ignoreEventErr=true - should not return error
+	// register errorNodeHandler with ignoreEventErr=true - should not return error
 	t.Run("ignore event error", func(t *testing.T) {
 		eng := newTestEngine(repo)
 		eng.ignoreEventErr = true
-		eng.RegisterEvents(&errorEvent{})
+		eng.RegisterNodeEvent("ErrorEvent", errorNodeHandler)
 		err := eng.runNodeEvents(ctx, []string{"ErrorEvent"}, 1, cur, prev)
 		if err != nil {
 			t.Errorf("expected no error (ignored), got: %v", err)
 		}
 	})
 
-	// register errorEvent with ignoreEventErr=false - should return error
+	// register errorNodeHandler with ignoreEventErr=false - should return error
 	t.Run("propagate event error", func(t *testing.T) {
 		eng := newTestEngine(repo)
 		eng.ignoreEventErr = false
-		eng.RegisterEvents(&errorEvent{})
+		eng.RegisterNodeEvent("ErrorEvent", errorNodeHandler)
 		err := eng.runNodeEvents(ctx, []string{"ErrorEvent"}, 1, cur, prev)
 		if err == nil {
 			t.Error("expected error, got nil")
@@ -142,8 +141,8 @@ func TestRunProcEvents(t *testing.T) {
 	// no error
 	t.Run("no error", func(t *testing.T) {
 		eng := newTestEngine(repo)
-		eng.RegisterEvents(&testProcEvent{})
-		err := eng.runProcEvents(ctx, []string{"ValidRevokeEvent"}, 1, "user1")
+		eng.RegisterProcEvent("TestProcEvent", testProcHandler)
+		err := eng.runProcEvents(ctx, []string{"TestProcEvent"}, 1, "user1")
 		if err != nil {
 			t.Errorf("expected no error, got: %v", err)
 		}
@@ -153,8 +152,8 @@ func TestRunProcEvents(t *testing.T) {
 	t.Run("ignore event error", func(t *testing.T) {
 		eng := newTestEngine(repo)
 		eng.ignoreEventErr = true
-		eng.RegisterEvents(&errorProcEvent{})
-		err := eng.runProcEvents(ctx, []string{"ErrorRevokeEvent"}, 1, "user1")
+		eng.RegisterProcEvent("ErrorProcEvent", errorProcHandler)
+		err := eng.runProcEvents(ctx, []string{"ErrorProcEvent"}, 1, "user1")
 		if err != nil {
 			t.Errorf("expected no error (ignored), got: %v", err)
 		}
@@ -164,56 +163,98 @@ func TestRunProcEvents(t *testing.T) {
 	t.Run("propagate event error", func(t *testing.T) {
 		eng := newTestEngine(repo)
 		eng.ignoreEventErr = false
-		eng.RegisterEvents(&errorProcEvent{})
-		err := eng.runProcEvents(ctx, []string{"ErrorRevokeEvent"}, 1, "user1")
+		eng.RegisterProcEvent("ErrorProcEvent", errorProcHandler)
+		err := eng.runProcEvents(ctx, []string{"ErrorProcEvent"}, 1, "user1")
 		if err == nil {
 			t.Error("expected error, got nil")
 		}
 	})
+
+	// unregistered event
+	t.Run("unregistered event", func(t *testing.T) {
+		eng := newTestEngine(repo)
+		err := eng.runProcEvents(ctx, []string{"UnknownEvent"}, 1, "user1")
+		if err == nil {
+			t.Error("expected error for unregistered event, got nil")
+		}
+	})
+}
+
+func TestRunProcEvents_GetProcessNameOnce(t *testing.T) {
+	// verify GetProcessNameByInstID is called only once, not per event
+	callCount := 0
+	repo := &mockRepo{
+		GetProcessNameByInstIDFunc: func(ctx context.Context, instID int) (string, error) {
+			callCount++
+			return "test-process", nil
+		},
+	}
+	ctx := context.Background()
+	eng := newTestEngine(repo)
+	eng.ignoreEventErr = true
+
+	// register multiple proc events
+	eng.RegisterProcEvent("Event1", testProcHandler)
+	eng.RegisterProcEvent("Event2", testProcHandler)
+	eng.RegisterProcEvent("Event3", testProcHandler)
+
+	err := eng.runProcEvents(ctx, []string{"Event1", "Event2", "Event3"}, 1, "user1")
+	if err != nil {
+		t.Errorf("expected no error, got: %v", err)
+	}
+	if callCount != 1 {
+		t.Errorf("expected GetProcessNameByInstID to be called once, got %d calls", callCount)
+	}
 }
 
 func TestVerifyEvents(t *testing.T) {
-	repo := &mockRepo{}
-	eng := newTestEngine(repo)
+	repo := &mockRepo{
+		GetProcessResourceFunc: func(ctx context.Context, procID int) (string, error) {
+			process := model.Process{
+				ProcessName:  "test",
+				RevokeEvents: []string{"RegisteredProcEvent"},
+			}
+			data, _ := json.Marshal(process)
+			return string(data), nil
+		},
+	}
+	ctx := context.Background()
 
-	// register event with wrong signature
-	eng.RegisterEvents(&badSignatureEvent{})
+	t.Run("all events registered", func(t *testing.T) {
+		eng := newTestEngine(repo)
+		eng.RegisterNodeEvent("RegisteredNodeEvent", testNodeHandler)
+		eng.RegisterProcEvent("RegisteredProcEvent", testProcHandler)
 
-	// verifyNodeEventParams should detect wrong signatures
-	em, ok := eng.getEvent("WrongParams")
-	if !ok {
-		t.Fatal("expected WrongParams to be registered")
-	}
-	err := eng.verifyNodeEventParams(em)
-	if err == nil {
-		t.Error("expected error for wrong method signature, got nil")
-	}
+		nodes := map[string]model.Node{
+			"node1": {NodeStartEvents: []string{"RegisteredNodeEvent"}},
+		}
+		err := eng.verifyEvents(ctx, 1, nodes)
+		if err != nil {
+			t.Errorf("expected no error, got: %v", err)
+		}
+	})
 
-	// verifyProcEventParams should also detect wrong signatures
-	err = eng.verifyProcEventParams(em)
-	if err == nil {
-		t.Error("expected error for wrong proc event signature, got nil")
-	}
+	t.Run("unregistered node event", func(t *testing.T) {
+		eng := newTestEngine(repo)
+		eng.RegisterProcEvent("RegisteredProcEvent", testProcHandler)
 
-	// verify valid node event
-	eng.RegisterEvents(&testNodeEvent{})
-	em, ok = eng.getEvent("ValidNodeEvent")
-	if !ok {
-		t.Fatal("expected ValidNodeEvent to be registered")
-	}
-	err = eng.verifyNodeEventParams(em)
-	if err != nil {
-		t.Errorf("expected no error for valid node event, got: %v", err)
-	}
+		nodes := map[string]model.Node{
+			"node1": {NodeStartEvents: []string{"MissingNodeEvent"}},
+		}
+		err := eng.verifyEvents(ctx, 1, nodes)
+		if err == nil {
+			t.Error("expected error for unregistered node event, got nil")
+		}
+	})
 
-	// verify valid proc event
-	eng.RegisterEvents(&testProcEvent{})
-	em, ok = eng.getEvent("ValidRevokeEvent")
-	if !ok {
-		t.Fatal("expected ValidRevokeEvent to be registered")
-	}
-	err = eng.verifyProcEventParams(em)
-	if err != nil {
-		t.Errorf("expected no error for valid proc event, got: %v", err)
-	}
+	t.Run("unregistered proc event", func(t *testing.T) {
+		eng := newTestEngine(repo)
+		eng.RegisterNodeEvent("RegisteredNodeEvent", testNodeHandler)
+
+		nodes := map[string]model.Node{}
+		err := eng.verifyEvents(ctx, 1, nodes)
+		if err == nil {
+			t.Error("expected error for unregistered proc event, got nil")
+		}
+	})
 }

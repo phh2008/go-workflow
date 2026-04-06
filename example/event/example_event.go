@@ -4,9 +4,8 @@ import (
 	"context"
 	"log/slog"
 
-	"github.com/Bunny3th/easy-workflow/internal/entity"
 	"github.com/Bunny3th/easy-workflow/internal/model"
-	"github.com/Bunny3th/easy-workflow/internal/service"
+	easyworkflow "github.com/Bunny3th/easy-workflow"
 	"gorm.io/gorm"
 )
 
@@ -23,12 +22,7 @@ func init() {
 
 // 示例事件
 type MyEvent struct {
-	eng *service.Engine
-}
-
-// SetEngine 引擎自动注入，在 RegisterEvents 时调用。
-func (e *MyEvent) SetEngine(eng *service.Engine) {
-	e.eng = eng
+	eng *easyworkflow.Engine
 }
 
 // getProcessNameByInstID 根据流程实例ID获取流程名称。
@@ -38,9 +32,8 @@ func (e *MyEvent) getProcessNameByInstID(ctx context.Context, instID int) (strin
 	return name, err
 }
 
-// MyEvent_End 节点结束事件
-func (e *MyEvent) MyEvent_End(ProcessInstanceID int, CurrentNode *model.Node, PrevNode model.Node) error {
-	ctx := context.Background()
+// OnEnd 节点结束事件
+func (e *MyEvent) OnEnd(ctx context.Context, ProcessInstanceID int, CurrentNode *model.Node, PrevNode model.Node) error {
 	processName, err := e.getProcessNameByInstID(ctx, ProcessInstanceID)
 	if err != nil {
 		return err
@@ -49,9 +42,8 @@ func (e *MyEvent) MyEvent_End(ProcessInstanceID int, CurrentNode *model.Node, Pr
 	return nil
 }
 
-// MyEvent_Notify 通知
-func (e *MyEvent) MyEvent_Notify(ProcessInstanceID int, CurrentNode *model.Node, PrevNode model.Node) error {
-	ctx := context.Background()
+// OnNotify 通知
+func (e *MyEvent) OnNotify(ctx context.Context, ProcessInstanceID int, CurrentNode *model.Node, PrevNode model.Node) error {
 	processName, err := e.getProcessNameByInstID(ctx, ProcessInstanceID)
 	if err != nil {
 		return err
@@ -72,9 +64,8 @@ func (e *MyEvent) MyEvent_Notify(ProcessInstanceID int, CurrentNode *model.Node,
 	return nil
 }
 
-// MyEvent_ResolveRoles 解析角色
-func (e *MyEvent) MyEvent_ResolveRoles(ProcessInstanceID int, CurrentNode *model.Node, PrevNode model.Node) error {
-	ctx := context.Background()
+// OnResolveRoles 解析角色
+func (e *MyEvent) OnResolveRoles(ctx context.Context, ProcessInstanceID int, CurrentNode *model.Node, PrevNode model.Node) error {
 	processName, err := e.getProcessNameByInstID(ctx, ProcessInstanceID)
 	if err != nil {
 		return err
@@ -89,11 +80,10 @@ func (e *MyEvent) MyEvent_ResolveRoles(ProcessInstanceID int, CurrentNode *model
 	return nil
 }
 
-// MyEvent_TaskForceNodePass 任务事件
+// OnTaskForceNodePass 任务事件
 // 在示例流程中，"副总审批"是一个会签节点，需要3个副总全部通过，节点才算通过
 // 现在通过任务事件改变会签通过人数，设为只要2人通过，即算通过
-func (e *MyEvent) MyEvent_TaskForceNodePass(TaskID int, CurrentNode *model.Node, PrevNode model.Node) error {
-	ctx := context.Background()
+func (e *MyEvent) OnTaskForceNodePass(ctx context.Context, TaskID int, CurrentNode *model.Node, PrevNode model.Node) error {
 	taskInfo, err := e.eng.GetTaskInfo(ctx, TaskID)
 	if err != nil {
 		return err
@@ -122,10 +112,9 @@ func (e *MyEvent) MyEvent_TaskForceNodePass(TaskID int, CurrentNode *model.Node,
 	// 如果通过数>=2，则自动将未通过的任务置为通过
 	if status.Passed >= 2 {
 		err = e.eng.DB().Transaction(func(tx *gorm.DB) error {
-			return tx.Model(&entity.ProcTask{}).
-				Where("proc_inst_id=? AND node_id=? AND batch_code=? AND is_finished=0",
-					taskInfo.ProcInstID, taskInfo.NodeID, taskInfo.BatchCode).
-				Updates(entity.ProcTask{Comment: "通过人数已满2人，系统自动代表你通过", IsFinished: 1, Status: 1}).Error
+			return tx.Model(&gorm.Model{}).
+				Exec("UPDATE proc_task SET comment='通过人数已满2人，系统自动代表你通过', is_finished=1, status=1 WHERE proc_inst_id=? AND node_id=? AND batch_code=? AND is_finished=0",
+					taskInfo.ProcInstID, taskInfo.NodeID, taskInfo.BatchCode).Error
 		})
 		if err != nil {
 			return err
@@ -135,13 +124,17 @@ func (e *MyEvent) MyEvent_TaskForceNodePass(TaskID int, CurrentNode *model.Node,
 	return nil
 }
 
-// MyEvent_Revoke 撤销事件
-func (e *MyEvent) MyEvent_Revoke(ProcessInstanceID int, RevokeUserID string) error {
-	ctx := context.Background()
+// OnRevoke 撤销事件
+func (e *MyEvent) OnRevoke(ctx context.Context, ProcessInstanceID int, RevokeUserID string) error {
 	processName, err := e.getProcessNameByInstID(ctx, ProcessInstanceID)
 	if err != nil {
 		return err
 	}
 	slog.Info("发起撤销", "流程", processName, "用户", RevokeUserID)
 	return nil
+}
+
+// NewMyEvent 创建并返回示例事件实例。
+func NewMyEvent(eng *easyworkflow.Engine) *MyEvent {
+	return &MyEvent{eng: eng}
 }

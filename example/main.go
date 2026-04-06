@@ -35,7 +35,12 @@ func main() {
 	}
 
 	// 注册事件
-	eng.RegisterEvents(&event.MyEvent{})
+	evt := event.NewMyEvent(eng)
+	eng.RegisterNodeEvent("MyEvent_End", evt.OnEnd)
+	eng.RegisterNodeEvent("MyEvent_Notify", evt.OnNotify)
+	eng.RegisterNodeEvent("MyEvent_ResolveRoles", evt.OnResolveRoles)
+	eng.RegisterNodeEvent("MyEvent_TaskForceNodePass", evt.OnTaskForceNodePass)
+	eng.RegisterProcEvent("MyEvent_Revoke", evt.OnRevoke)
 
 	//----------------------------生成一个示例流程----------------------------
 	process.CreateExampleProcess(eng)

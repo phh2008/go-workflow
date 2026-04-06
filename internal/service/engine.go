@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	"github.com/Bunny3th/easy-workflow/internal/entity"
+	"github.com/Bunny3th/easy-workflow/internal/event"
 	"github.com/Bunny3th/easy-workflow/internal/model"
 	"github.com/Bunny3th/easy-workflow/internal/repository"
 	"gorm.io/gorm"
@@ -17,19 +18,14 @@ type Config struct {
 	Logger           *slog.Logger // 日志记录器，为 nil 时使用默认日志
 }
 
-// eventMethod 事件方法包装，记录方法所在的 receiver 和反射方法信息。
-type eventMethod struct {
-	receiver any
-	method   any // reflect.Method - 使用 any 以避免在结构体定义中引入 reflect 依赖
-}
-
 // Engine 工作流引擎，封装所有状态和业务逻辑。
 type Engine struct {
 	db               *gorm.DB
 	logger           *slog.Logger
 	repo             repository.Repository
-	eventPool        map[string]*eventMethod
-	eventPoolMu      sync.RWMutex
+	nodeEventPool    map[string]event.NodeEventHandler
+	procEventPool    map[string]event.ProcEventHandler
+	eventMu          sync.RWMutex
 	ignoreEventErr   bool
 	procCache        map[int]map[string]model.Node
 	procCacheMu      sync.RWMutex
@@ -53,7 +49,8 @@ func NewEngine(db *gorm.DB, cfg Config) (*Engine, error) {
 		db:             db,
 		logger:         log,
 		repo:           repository.NewFlowRepo(db),
-		eventPool:      make(map[string]*eventMethod),
+		nodeEventPool:  make(map[string]event.NodeEventHandler),
+		procEventPool:  make(map[string]event.ProcEventHandler),
 		ignoreEventErr: cfg.IgnoreEventError,
 		procCache:      make(map[int]map[string]model.Node),
 		expressionEval: NewExpressionEvaluator(),

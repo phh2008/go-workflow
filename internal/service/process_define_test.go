@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/Bunny3th/easy-workflow/internal/entity"
+	"github.com/Bunny3th/easy-workflow/internal/event"
 	"github.com/Bunny3th/easy-workflow/internal/model"
 	"github.com/Bunny3th/easy-workflow/internal/repository"
 	"gorm.io/gorm"
@@ -18,7 +19,8 @@ func newTestEngine(repo repository.Repository) *Engine {
 	return &Engine{
 		logger:         slog.Default(),
 		repo:           repo,
-		eventPool:      make(map[string]*eventMethod),
+		nodeEventPool:  make(map[string]event.NodeEventHandler),
+		procEventPool:  make(map[string]event.ProcEventHandler),
 		ignoreEventErr: false,
 		procCache:      make(map[int]map[string]model.Node),
 		expressionEval: NewExpressionEvaluator(),

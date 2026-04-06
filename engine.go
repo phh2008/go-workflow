@@ -4,6 +4,7 @@ import (
 	"context"
 	"log/slog"
 
+	"github.com/Bunny3th/easy-workflow/internal/event"
 	"github.com/Bunny3th/easy-workflow/internal/entity"
 	"github.com/Bunny3th/easy-workflow/internal/model"
 	"github.com/Bunny3th/easy-workflow/internal/service"
@@ -42,9 +43,16 @@ func (e *Engine) Close() error {
 	return e.internal.Close()
 }
 
-// RegisterEvents 注册事件处理器。
-func (e *Engine) RegisterEvents(eventStructs ...any) {
-	e.internal.RegisterEvents(eventStructs...)
+// RegisterNodeEvent 注册节点事件处理器。
+// 节点事件用于 NodeStartEvents、NodeEndEvents、TaskFinishEvents。
+func (e *Engine) RegisterNodeEvent(name string, handler event.NodeEventHandler) {
+	e.internal.RegisterNodeEvent(name, handler)
+}
+
+// RegisterProcEvent 注册流程事件处理器。
+// 流程事件用于 RevokeEvents（流程撤销事件）。
+func (e *Engine) RegisterProcEvent(name string, handler event.ProcEventHandler) {
+	e.internal.RegisterProcEvent(name, handler)
 }
 
 // DB 返回底层的 GORM 数据库实例。
