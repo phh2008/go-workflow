@@ -102,20 +102,21 @@ func CreateProcessJson() (string, error) {
 	return string(j), err
 }
 
-// CreateExampleProcess 创建并保存示例流程。
-func CreateExampleProcess(eng *easyworkflow.Engine) {
+// CreateExampleProcess 创建并保存示例流程，返回流程定义 ID。
+func CreateExampleProcess(eng *easyworkflow.Engine) int {
 	// 获得示例流程json
 	j, err := CreateProcessJson()
 	if err != nil {
 		slog.Error("生成流程JSON失败", "error", err)
-		return
+		return 0
 	}
 
 	// 保存流程
 	id, err := eng.ProcessSave(context.Background(), model.ProcessSaveReq{Resource: j, CreateUserID: "system"})
 	if err != nil {
 		slog.Error("保存流程失败", "error", err)
-		return
+		return 0
 	}
 	slog.Info("流程保存成功", "流程ID", id)
+	return id
 }
