@@ -44,6 +44,7 @@ func (r *FlowRepo) GetProcessIDByName(ctx context.Context, p GetProcIDByNamePara
 	}
 	var res result
 	if err := r.ctxDB(ctx).
+		Table("proc_def").
 		Select("id, version").
 		Where("name = ? AND source = ?", p.Name, p.Source).
 		Scan(&res).Error; err != nil {
@@ -59,6 +60,7 @@ func (r *FlowRepo) GetProcessResource(ctx context.Context, procID int) (string, 
 	}
 	var r2 res
 	if err := r.ctxDB(ctx).
+		Table("proc_def").
 		Select("resource").
 		Where("id = ?", procID).
 		Scan(&r2).Error; err != nil {
