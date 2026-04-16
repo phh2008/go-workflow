@@ -67,7 +67,7 @@ func (e *Engine) ProcessSave(ctx context.Context, req model.ProcessSaveReq) (int
 			procDef := &entity.ProcDef{
 				BaseModel: entity.BaseModel{
 					CreatedAt: entity.Now(),
-					UpdateAt:  entity.Now(),
+					UpdatedAt: entity.Now(),
 					CreatedBy: req.CreatedBy,
 				},
 				Name:     process.ProcessName,

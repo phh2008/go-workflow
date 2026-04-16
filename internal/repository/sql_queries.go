@@ -12,12 +12,12 @@ const sqlArchiveTasks = "" +
 	"    task_id, proc_id, proc_inst_id, business_id, starter,\n" +
 	"    node_id, node_name, prev_node_id, is_cosigned, batch_code,\n" +
 	"    user_id, `status`, is_finished, `comment`,\n" +
-	"    proc_inst_create_time, created_at, update_time, created_by, updated_by, deleted, finished_time\n" +
+	"    proc_inst_create_time, created_at, updated_at, created_by, updated_by, deleted, finished_time\n" +
 	")\n" +
 	"SELECT id, proc_id, proc_inst_id, business_id, starter,\n" +
 	"       node_id, node_name, prev_node_id, is_cosigned, batch_code,\n" +
 	"       user_id, `status`, is_finished, `comment`,\n" +
-	"       proc_inst_create_time, created_at, update_time, created_by, updated_by, deleted, finished_time\n" +
+	"       proc_inst_create_time, created_at, updated_at, created_by, updated_by, deleted, finished_time\n" +
 	"  FROM proc_task\n" +
 	" WHERE proc_inst_id = ?"
 
@@ -28,10 +28,10 @@ const sqlUpdateInstanceStatus = "UPDATE proc_inst SET `status` = ? WHERE id = ?"
 const sqlArchiveInstance = "" +
 	"INSERT INTO hist_proc_inst (\n" +
 	"    proc_inst_id, proc_id, proc_version, business_id,\n" +
-	"    starter, current_node_id, created_at, update_time, created_by, updated_by, deleted, `status`\n" +
+	"    starter, current_node_id, created_at, updated_at, created_by, updated_by, deleted, `status`\n" +
 	")\n" +
 	"SELECT id, proc_id, proc_version, business_id,\n" +
-	"       starter, current_node_id, created_at, update_time, created_by, updated_by, deleted, `status`\n" +
+	"       starter, current_node_id, created_at, updated_at, created_by, updated_by, deleted, `status`\n" +
 	"  FROM proc_inst\n" +
 	" WHERE id = ?"
 
@@ -48,8 +48,8 @@ const sqlDeleteVariables = "DELETE FROM proc_inst_variable WHERE proc_inst_id = 
 // 流程定义保存相关 SQL
 
 const sqlArchiveProcDef = "" +
-	"INSERT INTO hist_proc_def (proc_id, name, `version`, resource, created_by, source, created_at, update_time, updated_by, deleted)\n" +
-	"SELECT id, name, `version`, resource, created_by, source, created_at, update_time, updated_by, deleted\n" +
+	"INSERT INTO hist_proc_def (proc_id, name, `version`, resource, created_by, source, created_at, updated_at, updated_by, deleted)\n" +
+	"SELECT id, name, `version`, resource, created_by, source, created_at, updated_at, updated_by, deleted\n" +
 	"  FROM proc_def\n" +
 	" WHERE name = ? AND source = ?"
 

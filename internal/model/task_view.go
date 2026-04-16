@@ -21,7 +21,7 @@ type TaskView struct {
 	Comment            string            `gorm:"column:comment"`                // 审批意见
 	ProcInstCreateTime *entity.LocalTime `gorm:"column:proc_inst_create_time;"` // 流程实例创建时间
 	CreatedAt          *entity.LocalTime `gorm:"column:created_at;"`            // 任务创建时间
-	UpdateAt           *entity.LocalTime `gorm:"column:update_time;"`           // 更新时间
+	UpdatedAt          *entity.LocalTime `gorm:"column:updated_at;"`            // 更新时间
 	CreatedBy          string            `gorm:"column:created_by"`             // 创建人
 	UpdatedBy          string            `gorm:"column:updated_by"`             // 更新人
 	FinishedTime       *entity.LocalTime `gorm:"column:finished_time;"`         // 任务处理完成时间

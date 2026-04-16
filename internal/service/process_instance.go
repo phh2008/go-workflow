@@ -95,7 +95,7 @@ func (e *Engine) instanceInit(ctx context.Context, procID int, businessID string
 			CurrentNodeID: startNode.NodeID,
 			BaseModel: entity.BaseModel{
 				CreatedAt: entity.Now(),
-				UpdateAt:  entity.Now(),
+				UpdatedAt: entity.Now(),
 			},
 		}
 		if err := e.repo.CreateInstance(txCtx, procInst); err != nil {
@@ -142,10 +142,10 @@ func (e *Engine) InstanceStart(ctx context.Context, req model.InstanceStartReq) 
 
 	err = e.startNodeHandle(ctx, instID, startNode, req.Comment, req.VariablesJSON)
 	if err != nil {
-		// 删除已建立的实例记录、变量记录、任务记录
-		e.db.WithContext(ctx).Where("id=?", instID).Delete(&entity.ProcInst{})
+		// 物理删除已建立的实例记录、变量记录、任务记录
+		e.db.WithContext(ctx).Unscoped().Where("id=?", instID).Delete(&entity.ProcInst{})
 		e.db.WithContext(ctx).Where("proc_inst_id=?", instID).Delete(&entity.ProcInstVariable{})
-		e.db.WithContext(ctx).Where("proc_inst_id=?", instID).Delete(&entity.ProcTask{})
+		e.db.WithContext(ctx).Unscoped().Where("proc_inst_id=?", instID).Delete(&entity.ProcTask{})
 		return instID, err
 	}
 

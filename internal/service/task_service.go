@@ -292,7 +292,7 @@ func (e *Engine) createTask(ctx context.Context, instID int, nodeID string, prev
 			UserID:             u,
 			BaseModel: entity.BaseModel{
 				CreatedAt: entity.Now(),
-				UpdateAt:  entity.Now(),
+				UpdatedAt: entity.Now(),
 				CreatedBy: "system",
 			},
 		})

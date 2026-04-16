@@ -95,7 +95,7 @@ func (r *FlowRepo) UpdateProcDef(ctx context.Context, p UpdateProcDefParams) err
 		Updates(entity.ProcDef{
 			BaseModel: entity.BaseModel{
 				CreatedBy: p.CreatedBy,
-				UpdateAt:  entity.Now(),
+				UpdatedAt: entity.Now(),
 			},
 			Version:  p.Version,
 			Resource: p.Resource,
@@ -139,13 +139,13 @@ func (r *FlowRepo) GetInstanceInfo(ctx context.Context, instID int) (model.Insta
 	var inst model.InstanceView
 	sql := "WITH tmp_procinst AS (" +
 		"SELECT id, proc_id, proc_version, business_id, starter, current_node_id, " +
-		"create_time, `status` FROM proc_inst WHERE id = ? " +
+		"created_at, `status` FROM proc_inst WHERE id = ? " +
 		"UNION ALL " +
 		"SELECT proc_inst_id AS id, proc_id, proc_version, business_id, starter, current_node_id, " +
-		"create_time, `status` FROM hist_proc_inst WHERE proc_inst_id = ?" +
+		"created_at, `status` FROM hist_proc_inst WHERE proc_inst_id = ?" +
 		") " +
 		"SELECT a.id, a.proc_id, a.proc_version, a.business_id, a.starter, " +
-		"a.current_node_id, a.create_time, a.`status`, b.name " +
+		"a.current_node_id, a.created_at, a.`status`, b.name " +
 		"FROM tmp_procinst a " +
 		"LEFT JOIN proc_def b ON a.proc_id = b.id"
 	if err := r.ctxDB(ctx).Raw(sql, instID, instID).Scan(&inst).Error; err != nil {
@@ -165,13 +165,13 @@ func (r *FlowRepo) ListInstanceStartByUser(ctx context.Context, p ListInstByUser
 
 	sql := "WITH tmp_procinst AS (" +
 		"SELECT id, proc_id, proc_version, business_id, starter, current_node_id, " +
-		"create_time, `status` FROM proc_inst WHERE " + instFilter +
+		"created_at, `status` FROM proc_inst WHERE " + instFilter +
 		" UNION ALL " +
 		"SELECT proc_inst_id AS id, proc_id, proc_version, business_id, starter, current_node_id, " +
-		"create_time, `status` FROM hist_proc_inst WHERE " + instFilter +
+		"created_at, `status` FROM hist_proc_inst WHERE " + instFilter +
 		") " +
 		"SELECT a.id, a.proc_id, a.proc_version, a.business_id, " +
-		"a.starter, a.current_node_id, a.create_time, a.`status`, b.name " +
+		"a.starter, a.current_node_id, a.created_at, a.`status`, b.name " +
 		"FROM tmp_procinst a " +
 		"JOIN proc_def b ON a.proc_id = b.id"
 
@@ -272,16 +272,16 @@ func (r *FlowRepo) GetTaskInfo(ctx context.Context, taskID int) (model.TaskView,
 	sql := "WITH tmp_task AS (" +
 		"SELECT id, proc_id, proc_inst_id, business_id, starter, node_id, node_name, prev_node_id, " +
 		"is_cosigned, batch_code, user_id, `status`, is_finished, `comment`, " +
-		"proc_inst_create_time, create_time, finished_time FROM proc_task WHERE id = ? " +
+		"proc_inst_create_time, created_at, finished_time FROM proc_task WHERE id = ? " +
 		"UNION ALL " +
 		"SELECT task_id AS id, proc_id, proc_inst_id, business_id, starter, node_id, node_name, " +
 		"prev_node_id, is_cosigned, batch_code, user_id, `status`, is_finished, `comment`, " +
-		"proc_inst_create_time, create_time, finished_time FROM hist_proc_task WHERE id = ?" +
+		"proc_inst_create_time, created_at, finished_time FROM hist_proc_task WHERE id = ?" +
 		") " +
 		"SELECT a.id, a.proc_id, b.name, a.proc_inst_id, a.business_id, a.starter, " +
 		"a.node_id, a.node_name, a.prev_node_id, a.is_cosigned, " +
 		"a.batch_code, a.user_id, a.`status`, a.is_finished, a.`comment`, " +
-		"a.proc_inst_create_time, a.create_time, a.finished_time " +
+		"a.proc_inst_create_time, a.created_at, a.finished_time " +
 		"FROM tmp_task a " +
 		"LEFT JOIN proc_def b ON a.proc_id = b.id"
 	if err := r.ctxDB(ctx).Raw(sql, taskID, taskID).Scan(&task).Error; err != nil {
@@ -298,7 +298,7 @@ func taskSelectColumns() string {
 	return "a.id, a.proc_id, b.name, a.proc_inst_id, a.business_id, a.starter, " +
 		"a.node_id, a.node_name, a.prev_node_id, a.is_cosigned, a.batch_code, " +
 		"a.user_id, a.`status`, a.is_finished, a.`comment`, " +
-		"a.proc_inst_create_time, a.create_time, a.finished_time"
+		"a.proc_inst_create_time, a.created_at, a.finished_time"
 }
 
 // ListTaskToDo 获取特定用户待办任务列表。
@@ -366,16 +366,16 @@ func (r *FlowRepo) ListTaskFinished(ctx context.Context, p ListFinishedParams) (
 	sql := "WITH tmp_task AS (" +
 		"SELECT id, proc_id, proc_inst_id, business_id, starter, node_id, node_name, prev_node_id, " +
 		"is_cosigned, batch_code, user_id, `status`, is_finished, `comment`, " +
-		"proc_inst_create_time, create_time, finished_time FROM proc_task WHERE " + taskFilter +
+		"proc_inst_create_time, created_at, finished_time FROM proc_task WHERE " + taskFilter +
 		" UNION ALL " +
 		"SELECT task_id AS id, proc_id, proc_inst_id, business_id, starter, node_id, node_name, " +
 		"prev_node_id, is_cosigned, batch_code, user_id, `status`, is_finished, `comment`, " +
-		"proc_inst_create_time, create_time, finished_time FROM hist_proc_task WHERE " + taskFilter +
+		"proc_inst_create_time, created_at, finished_time FROM hist_proc_task WHERE " + taskFilter +
 		") " +
 		"SELECT a.id, a.proc_id, b.name, a.proc_inst_id, a.business_id, a.starter, " +
 		"a.node_id, a.node_name, a.prev_node_id, a.is_cosigned, " +
 		"a.batch_code, a.user_id, a.`status`, a.is_finished, a.`comment`, " +
-		"a.proc_inst_create_time, a.create_time, a.finished_time " +
+		"a.proc_inst_create_time, a.created_at, a.finished_time " +
 		"FROM tmp_task a " +
 		"JOIN proc_def b ON a.proc_id = b.id " +
 		"WHERE a.is_finished = 1 AND a.`status` != 0"
@@ -423,11 +423,11 @@ func (r *FlowRepo) CountTaskFinished(ctx context.Context, p CountFinishedParams)
 	sql := "WITH tmp_task AS (" +
 		"SELECT id, proc_id, proc_inst_id, business_id, starter, node_id, node_name, prev_node_id, " +
 		"is_cosigned, batch_code, user_id, `status`, is_finished, `comment`, " +
-		"proc_inst_create_time, create_time, finished_time FROM proc_task WHERE " + taskFilter +
+		"proc_inst_create_time, created_at, finished_time FROM proc_task WHERE " + taskFilter +
 		" UNION ALL " +
 		"SELECT task_id AS id, proc_id, proc_inst_id, business_id, starter, node_id, node_name, " +
 		"prev_node_id, is_cosigned, batch_code, user_id, `status`, is_finished, `comment`, " +
-		"proc_inst_create_time, create_time, finished_time FROM hist_proc_task WHERE " + taskFilter +
+		"proc_inst_create_time, created_at, finished_time FROM hist_proc_task WHERE " + taskFilter +
 		") " +
 		"SELECT COUNT(*) " +
 		"FROM tmp_task a " +
@@ -457,16 +457,16 @@ func (r *FlowRepo) ListInstanceTaskHistory(ctx context.Context, instID int) ([]m
 	sql := "WITH tmp_task AS (" +
 		"SELECT id, proc_id, proc_inst_id, business_id, starter, node_id, node_name, prev_node_id, " +
 		"is_cosigned, batch_code, user_id, `status`, is_finished, `comment`, " +
-		"proc_inst_create_time, create_time, finished_time FROM proc_task WHERE proc_inst_id = ? " +
+		"proc_inst_create_time, created_at, finished_time FROM proc_task WHERE proc_inst_id = ? " +
 		"UNION ALL " +
 		"SELECT task_id AS id, proc_id, proc_inst_id, business_id, starter, node_id, node_name, " +
 		"prev_node_id, is_cosigned, batch_code, user_id, `status`, is_finished, `comment`, " +
-		"proc_inst_create_time, create_time, finished_time FROM hist_proc_task WHERE proc_inst_id = ?" +
+		"proc_inst_create_time, created_at, finished_time FROM hist_proc_task WHERE proc_inst_id = ?" +
 		") " +
 		"SELECT a.id, a.proc_id, b.name, a.proc_inst_id, a.business_id, a.starter, " +
 		"a.node_id, a.node_name, a.prev_node_id, a.is_cosigned, " +
 		"a.batch_code, a.user_id, a.`status`, a.is_finished, a.`comment`, " +
-		"a.proc_inst_create_time, a.create_time, a.finished_time " +
+		"a.proc_inst_create_time, a.created_at, a.finished_time " +
 		"FROM tmp_task a " +
 		"JOIN proc_def b ON a.proc_id = b.id " +
 		"ORDER BY a.id"
@@ -552,12 +552,12 @@ func (r *FlowRepo) UpdateTasksByBatchCode(ctx context.Context, batchCode string,
 
 // DeleteTasksByBatchCode 按批次码删除任务。
 func (r *FlowRepo) DeleteTasksByBatchCode(ctx context.Context, batchCode string) error {
-	return r.ctxDB(ctx).Where("batch_code=?", batchCode).Delete(&entity.ProcTask{}).Error
+	return r.ctxDB(ctx).Unscoped().Where("batch_code=?", batchCode).Delete(&entity.ProcTask{}).Error
 }
 
 // DeleteTaskByID 按任务ID删除任务。
 func (r *FlowRepo) DeleteTaskByID(ctx context.Context, taskID int) error {
-	return r.ctxDB(ctx).Where("id = ?", taskID).Delete(&entity.ProcTask{}).Error
+	return r.ctxDB(ctx).Unscoped().Where("id = ?", taskID).Delete(&entity.ProcTask{}).Error
 }
 
 // RevokeTask 将任务状态重置为初始（回滚已提交的任务）。
