@@ -4,8 +4,8 @@ import (
 	"context"
 	"log/slog"
 
-	"github.com/Bunny3th/easy-workflow/internal/event"
 	"github.com/Bunny3th/easy-workflow/internal/entity"
+	"github.com/Bunny3th/easy-workflow/internal/event"
 	"github.com/Bunny3th/easy-workflow/internal/model"
 	"github.com/Bunny3th/easy-workflow/internal/service"
 	"github.com/Bunny3th/easy-workflow/internal/web"

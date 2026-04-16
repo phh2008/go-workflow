@@ -4,7 +4,7 @@ import (
 	"context"
 	"log/slog"
 
-	"github.com/Bunny3th/easy-workflow"
+	easyworkflow "github.com/Bunny3th/easy-workflow"
 	"github.com/Bunny3th/easy-workflow/internal/model"
 )
 

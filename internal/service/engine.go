@@ -20,16 +20,16 @@ type Config struct {
 
 // Engine 工作流引擎，封装所有状态和业务逻辑。
 type Engine struct {
-	db               *gorm.DB
-	logger           *slog.Logger
-	repo             repository.Repository
-	nodeEventPool    map[string]event.NodeEventHandler
-	procEventPool    map[string]event.ProcEventHandler
-	eventMu          sync.RWMutex
-	ignoreEventErr   bool
-	procCache        map[int]map[string]model.Node
-	procCacheMu      sync.RWMutex
-	expressionEval   *ExpressionEvaluator
+	db             *gorm.DB
+	logger         *slog.Logger
+	repo           repository.Repository
+	nodeEventPool  map[string]event.NodeEventHandler
+	procEventPool  map[string]event.ProcEventHandler
+	eventMu        sync.RWMutex
+	ignoreEventErr bool
+	procCache      map[int]map[string]model.Node
+	procCacheMu    sync.RWMutex
+	expressionEval *ExpressionEvaluator
 }
 
 // NewEngine 创建并初始化工作流引擎。

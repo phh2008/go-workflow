@@ -4,7 +4,7 @@ import (
 	"github.com/Bunny3th/easy-workflow/internal/service"
 	"github.com/Bunny3th/easy-workflow/internal/web/handler"
 	"github.com/gin-gonic/gin"
-	"github.com/swaggo/files"
+	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
 )
 

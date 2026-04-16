@@ -23,33 +23,33 @@ type mockRepo struct {
 	CreateProcDefFunc      func(ctx context.Context, procDef *entity.ProcDef) error
 
 	// 流程实例
-	CreateInstanceFunc          func(ctx context.Context, inst *entity.ProcInst) error
-	UpdateInstanceFunc          func(ctx context.Context, id int, updates map[string]any) error
-	GetInstanceInfoFunc         func(ctx context.Context, instID int) (model.InstanceView, error)
-	ListInstanceStartByUserFunc func(ctx context.Context, p repository.ListInstByUserParams) ([]model.InstanceView, error)
+	CreateInstanceFunc           func(ctx context.Context, inst *entity.ProcInst) error
+	UpdateInstanceFunc           func(ctx context.Context, id int, updates map[string]any) error
+	GetInstanceInfoFunc          func(ctx context.Context, instID int) (model.InstanceView, error)
+	ListInstanceStartByUserFunc  func(ctx context.Context, p repository.ListInstByUserParams) ([]model.InstanceView, error)
 	CountInstanceStartByUserFunc func(ctx context.Context, p repository.CountByUserParams) (int64, error)
-	GetProcessIDByInstIDFunc    func(ctx context.Context, instID int) (int, error)
-	GetProcessNameByInstIDFunc  func(ctx context.Context, instID int) (string, error)
+	GetProcessIDByInstIDFunc     func(ctx context.Context, instID int) (int, error)
+	GetProcessNameByInstIDFunc   func(ctx context.Context, instID int) (string, error)
 
 	// 任务
-	CreateTasksFunc             func(ctx context.Context, tasks []entity.ProcTask) error
-	UpdateTaskFunc              func(ctx context.Context, id int, updates map[string]any) error
-	GetTaskInfoFunc             func(ctx context.Context, taskID int) (model.TaskView, error)
-	ListTaskToDoFunc            func(ctx context.Context, p repository.ListToDoParams) ([]model.TaskView, error)
-	CountTaskToDoFunc           func(ctx context.Context, p repository.CountByUserParams) (int64, error)
-	ListTaskFinishedFunc        func(ctx context.Context, p repository.ListFinishedParams) ([]model.TaskView, error)
-	CountTaskFinishedFunc       func(ctx context.Context, p repository.CountFinishedParams) (int64, error)
-	ListInstanceTaskHistoryFunc func(ctx context.Context, instID int) ([]model.TaskView, error)
-	GetTaskNodeStatusFunc       func(ctx context.Context, p repository.TaskNodeStatusParams) (int, int, int, error)
-	GetNotFinishUsersFunc       func(ctx context.Context, p repository.NodeQueryParams) ([]string, error)
-	GetPrevNodeBatchCodeFunc    func(ctx context.Context, taskID int) (string, error)
-	HasRejectInBatchFunc        func(ctx context.Context, batchCode string) (bool, error)
-	UpdateTasksByBatchCodeFunc  func(ctx context.Context, batchCode string, updates map[string]any) error
-	DeleteTasksByBatchCodeFunc  func(ctx context.Context, batchCode string) error
-	DeleteTaskByIDFunc          func(ctx context.Context, taskID int) error
-	RevokeTaskFunc              func(ctx context.Context, taskID int) error
+	CreateTasksFunc               func(ctx context.Context, tasks []entity.ProcTask) error
+	UpdateTaskFunc                func(ctx context.Context, id int, updates map[string]any) error
+	GetTaskInfoFunc               func(ctx context.Context, taskID int) (model.TaskView, error)
+	ListTaskToDoFunc              func(ctx context.Context, p repository.ListToDoParams) ([]model.TaskView, error)
+	CountTaskToDoFunc             func(ctx context.Context, p repository.CountByUserParams) (int64, error)
+	ListTaskFinishedFunc          func(ctx context.Context, p repository.ListFinishedParams) ([]model.TaskView, error)
+	CountTaskFinishedFunc         func(ctx context.Context, p repository.CountFinishedParams) (int64, error)
+	ListInstanceTaskHistoryFunc   func(ctx context.Context, instID int) ([]model.TaskView, error)
+	GetTaskNodeStatusFunc         func(ctx context.Context, p repository.TaskNodeStatusParams) (int, int, int, error)
+	GetNotFinishUsersFunc         func(ctx context.Context, p repository.NodeQueryParams) ([]string, error)
+	GetPrevNodeBatchCodeFunc      func(ctx context.Context, taskID int) (string, error)
+	HasRejectInBatchFunc          func(ctx context.Context, batchCode string) (bool, error)
+	UpdateTasksByBatchCodeFunc    func(ctx context.Context, batchCode string, updates map[string]any) error
+	DeleteTasksByBatchCodeFunc    func(ctx context.Context, batchCode string) error
+	DeleteTaskByIDFunc            func(ctx context.Context, taskID int) error
+	RevokeTaskFunc                func(ctx context.Context, taskID int) error
 	GetNextNodeIDByPrevNodeIDFunc func(ctx context.Context, prevNodeID string) (string, error)
-	GetUpstreamNodesFunc        func(ctx context.Context, nodeID string) ([]model.Node, error)
+	GetUpstreamNodesFunc          func(ctx context.Context, nodeID string) ([]model.Node, error)
 
 	// 执行关系
 	GetStartNodeIDFunc func(ctx context.Context, procID int) (string, error)

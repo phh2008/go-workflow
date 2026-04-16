@@ -24,13 +24,14 @@ func JSONMarshal(t any, escapeHTML bool) ([]byte, error) {
 // MakeUnique 利用 Map 对多个字符串切片进行去重处理，返回去重后的结果切片
 func MakeUnique(lists ...[]string) []string {
 	set := make(map[string]string)
-	var unique []string
 
 	for _, list := range lists {
 		for _, item := range list {
 			set[item] = ""
 		}
 	}
+
+	unique := make([]string, 0, len(set))
 
 	for k := range set {
 		unique = append(unique, k)

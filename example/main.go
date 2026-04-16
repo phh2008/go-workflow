@@ -7,7 +7,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/Bunny3th/easy-workflow"
+	easyworkflow "github.com/Bunny3th/easy-workflow"
 	"github.com/Bunny3th/easy-workflow/example/event"
 	"github.com/Bunny3th/easy-workflow/example/process"
 	"github.com/Bunny3th/easy-workflow/example/schedule"
@@ -78,12 +78,15 @@ func main() {
 	ginEngine := gin.New()
 	ginEngine.Use(gin.Logger())
 	ginEngine.Use(gin.Recovery())
-	eng.StartWebAPI(ginEngine, easyworkflow.WebConfig{
+	if err := eng.StartWebAPI(ginEngine, easyworkflow.WebConfig{
 		BaseURL:     "/process",
 		ShowSwagger: true,
 		SwaggerURL:  "/swagger/*any",
 		Addr:        ":8180",
-	})
+	}); err != nil {
+		slog.Error("启动 Web API 失败", "error", err)
+		os.Exit(1)
+	}
 }
 
 // runDemo 自动演示一个完整的请假流程（路径B：长请假 >= 3天）。
@@ -183,7 +186,7 @@ func runDemo(eng *easyworkflow.Engine, procID int) {
 // getFirstToDoTaskID 查询指定用户的第一个待办任务ID。
 func getFirstToDoTaskID(eng *easyworkflow.Engine, ctx context.Context, userID string) (int, error) {
 	result, err := eng.GetTaskToDoList(ctx, model.TaskListReq{
-		UserID: userID,
+		UserID:    userID,
 		PageQuery: model.PageQuery{PageNo: 1, PageSize: 1},
 	})
 	if err != nil {

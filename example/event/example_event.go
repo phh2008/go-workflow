@@ -4,8 +4,8 @@ import (
 	"context"
 	"log/slog"
 
-	"github.com/Bunny3th/easy-workflow/internal/model"
 	easyworkflow "github.com/Bunny3th/easy-workflow"
+	"github.com/Bunny3th/easy-workflow/internal/model"
 	"gorm.io/gorm"
 )
 

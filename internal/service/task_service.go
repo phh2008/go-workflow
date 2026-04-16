@@ -100,7 +100,7 @@ func (e *Engine) TaskFreeReject(ctx context.Context, req model.TaskFreeRejectReq
 	}
 
 	if currentNode.NodeType == model.RootNode {
-		return errors.New("起始节点无法驳回!")
+		return errors.New("起始节点无法驳回")
 	}
 
 	rejectToNode, err := e.getInstanceNode(ctx, taskInfo.ProcInstID, req.RejectToNodeID)
@@ -113,7 +113,9 @@ func (e *Engine) TaskFreeReject(ctx context.Context, req model.TaskFreeRejectReq
 	}
 
 	if err := e.processNode(ctx, taskInfo.ProcInstID, &rejectToNode, currentNode); err != nil {
-		e.taskRevoke(ctx, req.TaskID)
+		if revokeErr := e.taskRevoke(ctx, req.TaskID); revokeErr != nil {
+			slog.Error("[TaskFreeReject] taskRevoke 失败", "taskID", req.TaskID, "error", revokeErr)
+		}
 		return err
 	}
 
@@ -206,7 +208,7 @@ func (e *Engine) WhatCanIDo(ctx context.Context, taskID int) (model.TaskAction, 
 
 	node, err := e.getInstanceNode(ctx, taskInfo.ProcInstID, taskInfo.NodeID)
 	if err != nil {
-		return model.TaskAction{}, nil
+		return model.TaskAction{}, err
 	}
 
 	// 起始节点不能做驳回动作
@@ -339,23 +341,23 @@ func (e *Engine) processTask(ctx context.Context, taskID int, comment, varJSON s
 	// 如果是通过且开启 DirectlyToWhoRejectedMe，做功能前置验证
 	if option.status == 1 && option.directlyToWhoRejectedMe {
 		if taskInfo.IsCosigned == 1 {
-			return errors.New("会签节点无法使用【DirectlyToWhoRejectedMe】功能!")
+			return errors.New("会签节点无法使用【DirectlyToWhoRejectedMe】功能")
 		}
 		if taskInfo.PrevNodeID == "" {
-			return errors.New("此任务不存在上级节点,无法使用【DirectlyToWhoRejectedMe】功能!")
+			return errors.New("此任务不存在上级节点,无法使用【DirectlyToWhoRejectedMe】功能")
 		}
 		prevReject, err := e.isPrevNodeRejected(ctx, taskInfo)
 		if err != nil {
 			return err
 		}
 		if !prevReject {
-			return errors.New("此任务的上一节点并未做驳回,无法使用【DirectlyToWhoRejectedMe】功能！")
+			return errors.New("此任务的上一节点并未做驳回,无法使用【DirectlyToWhoRejectedMe】功能")
 		}
 	}
 
 	// 驳回时，起始节点不能做驳回
 	if option.status == 2 && currentNode.NodeType == model.RootNode {
-		return errors.New("起始节点无法驳回!")
+		return errors.New("起始节点无法驳回")
 	}
 
 	if err := e.taskSubmit(ctx, taskInfo, comment, varJSON, option.status); err != nil {
@@ -373,14 +375,18 @@ func (e *Engine) processTask(ctx context.Context, taskID int, comment, varJSON s
 	} else {
 		prevNode, err = e.getInstanceNode(ctx, taskInfo.ProcInstID, taskInfo.PrevNodeID)
 		if err != nil {
-			e.taskRevoke(ctx, taskID)
+			if revokeErr := e.taskRevoke(ctx, taskID); revokeErr != nil {
+				slog.Error("[processTask] taskRevoke 失败", "taskID", taskID, "error", revokeErr)
+			}
 			return err
 		}
 	}
 
 	// 处理任务结束事件
 	if err := e.runNodeEvents(ctx, currentNode.TaskFinishEvents, taskInfo.TaskID, &currentNode, prevNode); err != nil {
-		e.taskRevoke(ctx, taskID)
+		if revokeErr := e.taskRevoke(ctx, taskID); revokeErr != nil {
+			slog.Error("[processTask] taskRevoke 失败", "taskID", taskID, "error", revokeErr)
+		}
 		return err
 	}
 
@@ -389,14 +395,18 @@ func (e *Engine) processTask(ctx context.Context, taskID int, comment, varJSON s
 	if option.status == 1 && option.directlyToWhoRejectedMe {
 		nextNode, err = e.getInstanceNode(ctx, taskInfo.ProcInstID, taskInfo.PrevNodeID)
 		if err != nil {
-			e.taskRevoke(ctx, taskID)
+			if revokeErr := e.taskRevoke(ctx, taskID); revokeErr != nil {
+				slog.Error("[processTask] taskRevoke 失败", "taskID", taskID, "error", revokeErr)
+			}
 			return err
 		}
 	} else {
 		nextNode, err = e.taskNextNode(ctx, taskInfo)
 		if err != nil {
 			slog.Debug("[processTask] taskNextNode 失败", "error", err)
-			e.taskRevoke(ctx, taskID)
+			if revokeErr := e.taskRevoke(ctx, taskID); revokeErr != nil {
+				slog.Error("[processTask] taskRevoke 失败", "taskID", taskID, "error", revokeErr)
+			}
 			return err
 		}
 	}
@@ -410,14 +420,18 @@ func (e *Engine) processTask(ctx context.Context, taskID int, comment, varJSON s
 
 	// 处理节点结束事件
 	if err := e.runNodeEvents(ctx, currentNode.NodeEndEvents, taskInfo.ProcInstID, &currentNode, prevNode); err != nil {
-		e.taskRevoke(ctx, taskID)
+		if revokeErr := e.taskRevoke(ctx, taskID); revokeErr != nil {
+			slog.Error("[processTask] taskRevoke 失败", "taskID", taskID, "error", revokeErr)
+		}
 		return err
 	}
 
 	// 开始处理下一个节点
 	if err := e.processNode(ctx, taskInfo.ProcInstID, &nextNode, currentNode); err != nil {
 		slog.Debug("[processTask] processNode 失败", "nextNodeID", nextNode.NodeID, "error", err)
-		e.taskRevoke(ctx, taskID)
+		if revokeErr := e.taskRevoke(ctx, taskID); revokeErr != nil {
+			slog.Error("[processTask] taskRevoke 失败", "taskID", taskID, "error", revokeErr)
+		}
 		return err
 	}
 
@@ -472,8 +486,10 @@ func (e *Engine) taskRevoke(ctx context.Context, taskID int) error {
 		}
 
 		// 重置同批次中未做通过或驳回的 task
-		tx.Exec("UPDATE proc_task SET is_finished=0 "+
-			"WHERE `status`=0 AND batch_code IN (SELECT batch_code FROM proc_task WHERE id=?)", taskID)
+		if err := tx.Exec("UPDATE proc_task SET is_finished=0 "+
+			"WHERE `status`=0 AND batch_code IN (SELECT batch_code FROM proc_task WHERE id=?)", taskID).Error; err != nil {
+			return err
+		}
 
 		return nil
 	})

@@ -102,7 +102,7 @@ func (e *Engine) gatewayNodeHandle(ctx context.Context, instID int, current *mod
 			return err
 		}
 		for k, v := range kv {
-			expression = strings.Replace(expression, k, v, -1)
+			expression = strings.ReplaceAll(expression, k, v)
 		}
 
 		// 使用表达式求值器计算表达式

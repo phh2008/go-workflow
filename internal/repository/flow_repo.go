@@ -286,7 +286,7 @@ func (r *FlowRepo) GetTaskInfo(ctx context.Context, taskID int) (model.TaskView,
 		return model.TaskView{}, err
 	}
 	if task.TaskID == 0 {
-		return model.TaskView{}, fmt.Errorf("ID为%d的任务不存在!", taskID)
+		return model.TaskView{}, fmt.Errorf("ID为%d的任务不存在", taskID)
 	}
 	return task, nil
 }

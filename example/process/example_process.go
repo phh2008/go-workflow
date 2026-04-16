@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"log/slog"
 
-	"github.com/Bunny3th/easy-workflow"
+	easyworkflow "github.com/Bunny3th/easy-workflow"
 	"github.com/Bunny3th/easy-workflow/internal/model"
 )
 
@@ -34,7 +34,7 @@ func CreateProcessJson() (string, error) {
 	// 注意，这里使用了角色。因为系统无法预先知道角色中存在多少用户，所以必须用StartEvents解析角色，将角色中的用户加到UserIDs中
 	Node3 := model.Node{NodeID: "Manager", NodeName: "主管审批",
 		NodeType: model.TaskNode, Roles: []string{"主管"},
-		PrevNodeIDs: []string{"GW-Day"},
+		PrevNodeIDs:     []string{"GW-Day"},
 		NodeStartEvents: []string{"MyEvent_ResolveRoles", "MyEvent_Notify"},
 		NodeEndEvents:   []string{"MyEvent_End"},
 	}
@@ -49,7 +49,7 @@ func CreateProcessJson() (string, error) {
 	// 人事审批任务节点
 	Node5 := model.Node{NodeID: "HR", NodeName: "人事审批",
 		NodeType: model.TaskNode, Roles: []string{"人事经理"},
-		PrevNodeIDs: []string{"GW-Parallel"},
+		PrevNodeIDs:     []string{"GW-Parallel"},
 		NodeStartEvents: []string{"MyEvent_ResolveRoles", "MyEvent_Notify"},
 		NodeEndEvents:   []string{"MyEvent_End"},
 	}
@@ -58,10 +58,10 @@ func CreateProcessJson() (string, error) {
 	// 注意，IsCosigned=1说明这是一个会签节点，全部通过才算通过，一人驳回即算驳回
 	Node6 := model.Node{NodeID: "DeputyBoss", NodeName: "副总审批",
 		NodeType: model.TaskNode, Roles: []string{"副总"},
-		IsCosigned:  1,
-		PrevNodeIDs: []string{"GW-Parallel"},
-		NodeStartEvents: []string{"MyEvent_ResolveRoles", "MyEvent_Notify"},
-		NodeEndEvents:   []string{"MyEvent_End"},
+		IsCosigned:       1,
+		PrevNodeIDs:      []string{"GW-Parallel"},
+		NodeStartEvents:  []string{"MyEvent_ResolveRoles", "MyEvent_Notify"},
+		NodeEndEvents:    []string{"MyEvent_End"},
 		TaskFinishEvents: []string{"MyEvent_TaskForceNodePass"},
 	}
 
@@ -77,7 +77,7 @@ func CreateProcessJson() (string, error) {
 	// 老板审批任务节点
 	Node8 := model.Node{NodeID: "Boss", NodeName: "老板审批",
 		NodeType: model.TaskNode, Roles: []string{"老板"},
-		PrevNodeIDs: []string{"GW-Parallel2"},
+		PrevNodeIDs:     []string{"GW-Parallel2"},
 		NodeStartEvents: []string{"MyEvent_ResolveRoles", "MyEvent_Notify"},
 		NodeEndEvents:   []string{"MyEvent_End"},
 	}

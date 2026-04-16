@@ -30,7 +30,9 @@ func insertTestData(t *testing.T, db *gorm.DB) (instID int, procID int) {
 	var count int64
 	db.Table("proc_inst").Count(&count)
 	if count > 0 {
-		db.Table("proc_inst").Select("id, proc_id").Row().Scan(&instID, &procID)
+		if err := db.Table("proc_inst").Select("id, proc_id").Row().Scan(&instID, &procID); err != nil {
+			t.Fatalf("查询 proc_inst 失败: %v", err)
+		}
 		t.Logf("proc_inst 已有数据，使用 instID=%d, proc_id=%d", instID, procID)
 		return
 	}

@@ -17,7 +17,7 @@ func (e *Engine) IsVariable(ctx context.Context, key string) bool {
 // RemoveVarPrefix 去掉变量前缀 "$"。
 func (e *Engine) RemoveVarPrefix(ctx context.Context, variable string) string {
 	_ = ctx
-	return strings.Replace(variable, "$", "", -1)
+	return strings.ReplaceAll(variable, "$", "")
 }
 
 // ResolveVariables 解析变量，获取并设置其 value，返回 map（非变量则原样存储）。

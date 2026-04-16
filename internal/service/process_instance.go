@@ -161,7 +161,7 @@ func (e *Engine) InstanceRevoke(ctx context.Context, req model.InstanceRevokeReq
 			return err
 		}
 		if id == 0 {
-			return errors.New("当前流程所在节点不是发起节点，无法撤销!")
+			return errors.New("当前流程所在节点不是发起节点，无法撤销")
 		}
 	}
 
