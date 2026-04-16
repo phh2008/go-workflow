@@ -20,7 +20,7 @@ type BaseModel struct {
 	UpdatedAt LocalTime             `gorm:"column:updated_at;type:DATETIME;default:NOW();comment:更新时间"`
 	CreatedBy string                `gorm:"column:created_by;type:VARCHAR(50);default:'';comment:创建人"`
 	UpdatedBy string                `gorm:"column:updated_by;type:VARCHAR(50);default:'';comment:更新人"`
-	Deleted   soft_delete.DeletedAt `gorm:"softDelete:flag,DeletedAtField:UpdatedAt;default:1" json:"deleted"` // 是否删除：1-否，2-是
+	Deleted   soft_delete.DeletedAt `gorm:"column:deleted;type:TINYINT;softDelete:flag,DeletedAtField:UpdatedAt;default:1" json:"deleted"` // 是否删除：1-否，2-是
 }
 
 // ProcDef 流程定义表，存储流程的定义信息。
