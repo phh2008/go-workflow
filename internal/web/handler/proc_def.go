@@ -23,7 +23,7 @@ func NewProcDefHandler(eng *service.Engine) *ProcDefHandler {
 // @Tags         流程定义
 // @Produce      json
 // @Param        Resource  formData string  true  "流程定义资源(json)" example(json字符串)
-// @Param        CreateUserID  formData string  true  "创建者ID" example(0001)
+// @Param        CreatedBy  formData string  true  "创建者" example(0001)
 // @Success      200  {object}  int 流程ID
 // @Failure      400  {object}  string 报错信息
 // @Router       /def/save [post]

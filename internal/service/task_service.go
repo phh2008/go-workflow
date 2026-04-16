@@ -281,7 +281,7 @@ func (e *Engine) createTask(ctx context.Context, instID int, nodeID string, prev
 		tasks = append(tasks, entity.ProcTask{
 			ProcID:             procID,
 			ProcInstID:         instID,
-			ProcInstCreateTime: procInst.CreateTime,
+			ProcInstCreateTime: procInst.CreatedAt,
 			BusinessID:         procInst.BusinessID,
 			Starter:            procInst.Starter,
 			NodeID:             nodeID,
@@ -290,6 +290,11 @@ func (e *Engine) createTask(ctx context.Context, instID int, nodeID string, prev
 			IsCosigned:         node.IsCosigned,
 			BatchCode:          batchCode.String(),
 			UserID:             u,
+			BaseModel: entity.BaseModel{
+				CreatedAt: entity.Now(),
+				UpdateAt:  entity.Now(),
+				CreatedBy: "system",
+			},
 		})
 	}
 

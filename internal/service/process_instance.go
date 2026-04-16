@@ -93,6 +93,10 @@ func (e *Engine) instanceInit(ctx context.Context, procID int, businessID string
 			ProcVersion:   procDef.Version,
 			BusinessID:    businessID,
 			CurrentNodeID: startNode.NodeID,
+			BaseModel: entity.BaseModel{
+				CreatedAt: entity.Now(),
+				UpdateAt:  entity.Now(),
+			},
 		}
 		if err := e.repo.CreateInstance(txCtx, procInst); err != nil {
 			return err

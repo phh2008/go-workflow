@@ -93,10 +93,12 @@ func (r *FlowRepo) UpdateProcDef(ctx context.Context, p UpdateProcDefParams) err
 	return r.ctxDB(ctx).Model(&entity.ProcDef{}).
 		Where("name=? AND source=?", p.Name, p.Source).
 		Updates(entity.ProcDef{
-			Version:   p.Version,
-			Resource:  p.Resource,
-			UserID:    p.UserID,
-			CreatTime: entity.Now(),
+			BaseModel: entity.BaseModel{
+				CreatedBy: p.CreatedBy,
+				UpdateAt:  entity.Now(),
+			},
+			Version:  p.Version,
+			Resource: p.Resource,
 		}).Error
 }
 

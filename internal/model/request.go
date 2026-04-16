@@ -66,8 +66,8 @@ type ProcessDefGetReq struct {
 
 // ProcessSaveReq 保存流程定义请求。
 type ProcessSaveReq struct {
-	Resource     string `form:"resource" json:"resource" binding:"required"`
-	CreateUserID string `form:"createUserId" json:"createUserId" binding:"required"`
+	Resource  string `form:"resource" json:"resource" binding:"required"`
+	CreatedBy string `form:"createdBy" json:"createdBy" binding:"required"`
 }
 
 // --- 流程实例请求 ---

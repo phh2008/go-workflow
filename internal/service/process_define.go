@@ -29,8 +29,8 @@ func (e *Engine) ProcessSave(ctx context.Context, req model.ProcessSaveReq) (int
 		return 0, err
 	}
 
-	if process.ProcessName == "" || process.Source == "" || req.CreateUserID == "" {
-		return 0, errors.New("流程名称、来源、创建人ID不能为空")
+	if process.ProcessName == "" || process.Source == "" || req.CreatedBy == "" {
+		return 0, errors.New("流程名称、来源、创建人不能为空")
 	}
 
 	// 判断此工作流是否已定义
@@ -53,11 +53,11 @@ func (e *Engine) ProcessSave(ctx context.Context, req model.ProcessSaveReq) (int
 			// 更新现有定义
 			newVersion := version + 1
 			if err := e.repo.UpdateProcDef(txCtx, repository.UpdateProcDefParams{
-				Name:     process.ProcessName,
-				Source:   process.Source,
-				Resource: req.Resource,
-				UserID:   req.CreateUserID,
-				Version:  newVersion,
+				Name:      process.ProcessName,
+				Source:    process.Source,
+				Resource:  req.Resource,
+				CreatedBy: req.CreatedBy,
+				Version:   newVersion,
 			}); err != nil {
 				return err
 			}
@@ -65,12 +65,15 @@ func (e *Engine) ProcessSave(ctx context.Context, req model.ProcessSaveReq) (int
 		} else {
 			// 无老版本，直接插入
 			procDef := &entity.ProcDef{
-				Name:      process.ProcessName,
-				Resource:  req.Resource,
-				UserID:    req.CreateUserID,
-				Source:    process.Source,
-				CreatTime: entity.Now(),
-				Version:   1,
+				BaseModel: entity.BaseModel{
+					CreatedAt: entity.Now(),
+					UpdateAt:  entity.Now(),
+					CreatedBy: req.CreatedBy,
+				},
+				Name:     process.ProcessName,
+				Resource: req.Resource,
+				Source:   process.Source,
+				Version:  1,
 			}
 			if err := e.repo.CreateProcDef(txCtx, procDef); err != nil {
 				return err
@@ -148,7 +151,7 @@ func nodesToExecutions(procID int, procVersion int, nodes []model.Node) []entity
 				PrevNodeID:  prevNodeID,
 				NodeType:    int(n.NodeType),
 				IsCosigned:  n.IsCosigned,
-				CreateTime:  entity.Now(),
+				CreatedAt:   entity.Now(),
 			})
 		} else {
 			for _, prev := range n.PrevNodeIDs {
@@ -160,7 +163,7 @@ func nodesToExecutions(procID int, procVersion int, nodes []model.Node) []entity
 					PrevNodeID:  prev,
 					NodeType:    int(n.NodeType),
 					IsCosigned:  n.IsCosigned,
-					CreateTime:  entity.Now(),
+					CreatedAt:   entity.Now(),
 				})
 			}
 		}

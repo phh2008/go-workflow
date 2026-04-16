@@ -8,11 +8,11 @@ type GetProcIDByNameParams struct {
 
 // UpdateProcDefParams 更新流程定义参数。
 type UpdateProcDefParams struct {
-	Name     string
-	Source   string
-	Resource string
-	UserID   string
-	Version  int
+	Name      string
+	Source    string
+	Resource  string
+	CreatedBy string
+	Version   int
 }
 
 // CountByUserParams 按用户查询数量参数（共享）。

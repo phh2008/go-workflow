@@ -96,7 +96,7 @@ func TestProcessSave_EmptyName(t *testing.T) {
 	ctx := context.Background()
 
 	resource := `{"ProcessName":"","Source":"OA","Nodes":[]}`
-	_, err := eng.ProcessSave(ctx, model.ProcessSaveReq{Resource: resource, CreateUserID: "user1"})
+	_, err := eng.ProcessSave(ctx, model.ProcessSaveReq{Resource: resource, CreatedBy: "user1"})
 	if err == nil {
 		t.Fatal("ProcessSave 空名称应返回错误")
 	}
@@ -108,19 +108,19 @@ func TestProcessSave_EmptySource(t *testing.T) {
 	ctx := context.Background()
 
 	resource := `{"ProcessName":"请假","Source":"","Nodes":[]}`
-	_, err := eng.ProcessSave(ctx, model.ProcessSaveReq{Resource: resource, CreateUserID: "user1"})
+	_, err := eng.ProcessSave(ctx, model.ProcessSaveReq{Resource: resource, CreatedBy: "user1"})
 	if err == nil {
 		t.Fatal("ProcessSave 空来源应返回错误")
 	}
 }
 
-func TestProcessSave_EmptyCreateUserID(t *testing.T) {
+func TestProcessSave_EmptyCreatedBy(t *testing.T) {
 	repo := &mockRepo{}
 	eng := newTestEngine(repo)
 	ctx := context.Background()
 
 	resource := `{"ProcessName":"请假","Source":"OA","Nodes":[]}`
-	_, err := eng.ProcessSave(ctx, model.ProcessSaveReq{Resource: resource, CreateUserID: ""})
+	_, err := eng.ProcessSave(ctx, model.ProcessSaveReq{Resource: resource, CreatedBy: ""})
 	if err == nil {
 		t.Fatal("ProcessSave 空创建人ID应返回错误")
 	}
@@ -131,7 +131,7 @@ func TestProcessSave_InvalidJSON(t *testing.T) {
 	eng := newTestEngine(repo)
 	ctx := context.Background()
 
-	_, err := eng.ProcessSave(ctx, model.ProcessSaveReq{Resource: "invalid", CreateUserID: "user1"})
+	_, err := eng.ProcessSave(ctx, model.ProcessSaveReq{Resource: "invalid", CreatedBy: "user1"})
 	if err == nil {
 		t.Fatal("ProcessSave 无效 JSON 应返回错误")
 	}
@@ -210,8 +210,8 @@ func TestGetProcessList(t *testing.T) {
 	ctx := context.Background()
 
 	expectedDefs := []entity.ProcDef{
-		{ID: 1, Name: "请假流程", Source: "OA"},
-		{ID: 2, Name: "报销流程", Source: "OA"},
+		{BaseModel: entity.BaseModel{ID: 1}, Name: "请假流程", Source: "OA"},
+		{BaseModel: entity.BaseModel{ID: 2}, Name: "报销流程", Source: "OA"},
 	}
 	repo.ListProcessDefFunc = func(ctx context.Context, source string) ([]entity.ProcDef, error) {
 		if source != "OA" {

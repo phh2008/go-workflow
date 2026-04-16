@@ -10,7 +10,7 @@ type ProcExecution struct {
 	PrevNodeID  string    `gorm:"column:prev_node_id;type:VARCHAR(250) DEFAULT NULL;default NULL;comment:上级节点ID"`
 	NodeType    int       `gorm:"column:node_type;type:TINYINT NOT NULL;comment:流程类型 0:开始节点 1:任务节点 2:网关节点 3:结束节点"`
 	IsCosigned  int       `gorm:"column:is_cosigned;type:TINYINT NOT NULL;comment:是否会签"`
-	CreateTime  LocalTime `gorm:"column:create_time;type:DATETIME DEFAULT NOW();default NOW();comment:创建时间"`
+	CreatedAt   LocalTime `gorm:"column:created_at;type:DATETIME DEFAULT NOW();default NOW();comment:创建时间"`
 }
 
 func (ProcExecution) TableName() string {
@@ -27,7 +27,7 @@ type HistProcExecution struct {
 	PrevNodeID  string    `gorm:"column:prev_node_id;type:VARCHAR(250) DEFAULT NULL;default NULL;comment:上级节点ID"`
 	NodeType    int       `gorm:"column:node_type;type:TINYINT NOT NULL;comment:流程类型 0:开始节点 1:任务节点 2:网关节点 3:结束节点"`
 	IsCosigned  int       `gorm:"column:is_cosigned;type:TINYINT NOT NULL;comment:是否会签"`
-	CreateTime  LocalTime `gorm:"column:create_time;type:DATETIME DEFAULT NOW();default NOW();comment:创建时间"`
+	CreatedAt   LocalTime `gorm:"column:created_at;type:DATETIME DEFAULT NOW();default NOW();comment:创建时间"`
 }
 
 func (HistProcExecution) TableName() string {
